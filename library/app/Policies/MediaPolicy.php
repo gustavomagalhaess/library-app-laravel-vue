@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Models\User;
+use Illuminate\Support\Str;
 
 /**
  * Authorization for the polymorphic Media front controller.
@@ -63,10 +64,7 @@ class MediaPolicy
      */
     private function permissionFor(string $type, string $action): ?string
     {
-        $prefix = match ($type) {
-            'book' => 'books',
-            default => null,
-        };
+        $prefix = Str::plural($type);
 
         return $prefix === null ? null : $prefix.'.'.$action;
     }

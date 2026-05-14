@@ -15,7 +15,7 @@ use Illuminate\Contracts\Container\BindingResolutionException;
 
 class MediaService
 {
-    private const string SERVICE_PREFIX = "App\\Domain";
+    private const string DOMAIN_PREFIX = "App\\Domain";
     private const string SERVICE_SUFFIX = 'Service';
 
     public function validatedSearchTerm(string $term): ?string
@@ -32,9 +32,9 @@ class MediaService
         try {
             $mediaType = Str::ucfirst(Str::lower($type));
             $className = $mediaType . self::SERVICE_SUFFIX;
-            $namespace = self::SERVICE_PREFIX . "\\$mediaType\\Services\\" . $className;
+            $fullServiceName = self::DOMAIN_PREFIX . "\\$mediaType\\Services\\" . $className;
 
-            return app($namespace);
+            return app($fullServiceName);
         } catch (BindingResolutionException $e) {
             app('log')->error(
                 MediaMessage::UNSUPORTED_MEDIA_TYPE,
@@ -50,10 +50,11 @@ class MediaService
      */
     public function typeSpecificFields(string $type): array
     {
-        /** @var ModelInterface $model */
-        $model = Str::ucfirst(Str::lower($type));
+        /** @var ModelInterface $fullModelName */
+        $mediaType = Str::ucfirst(Str::lower($type));
+        $fullModelName = self::DOMAIN_PREFIX . "\\$mediaType\\Models\\" . $mediaType;
 
-        return $model::getSpecificFields();
+        return $fullModelName::getSpecificFields();
     }
 
     /**
