@@ -7,6 +7,7 @@ import AuthorList from '@/Components/author/AuthorList.vue';
 import AuthorForm from '@/Components/author/AuthorForm.vue';
 import Modal from '@/Components/Modal.vue';
 import ConfirmModal from '@/Components/shared/ConfirmModal.vue';
+import { useToasts } from '@/composables/useToasts.js';
 
 /**
  * Authors index page — mirror image of Pages/Books/Index.vue.
@@ -14,12 +15,18 @@ import ConfirmModal from '@/Components/shared/ConfirmModal.vue';
  *   - "+ New author"  → AuthorForm in a modal → POST /api/authors
  *   - "Edit"          → AuthorForm in a modal → PUT  /api/authors/{author}
  *   - "Delete"        → ConfirmModal          → DELETE /api/authors/{author}
+ *
+ * Feedback for every API call is delivered through the global toast queue
+ * (see useToasts + the Toaster mounted in AuthenticatedLayout). The form
+ * still shows 422 field errors inline.
  */
 defineProps({
   authors: Object,
   filters: Object,
   can: Object,
 });
+
+const toast = useToasts();
 
 // --- Form modal state ------------------------------------------------------
 const formMode = ref(null);
@@ -50,9 +57,10 @@ function closeForm() {
 async function submitForm(payload) {
   formProcessing.value = true;
   formErrors.value = {};
+  const isEdit = formMode.value === 'edit';
 
   try {
-    if (formMode.value === 'edit') {
+    if (isEdit) {
       await axios.put(route('api.authors.update', { author: formTarget.value.id }), payload);
     } else {
       await axios.post(route('api.authors.store'), payload);
@@ -60,11 +68,12 @@ async function submitForm(payload) {
     formMode.value = null;
     formTarget.value = null;
     refreshList();
+    toast.success(isEdit ? 'Author updated.' : 'Author added.');
   } catch (e) {
     if (e?.response?.status === 422) {
       formErrors.value = flattenLaravelErrors(e.response.data?.errors ?? {});
     } else {
-      formErrors.value = { _form: e?.response?.data?.message ?? 'Something went wrong.' };
+      toast.error(e?.response?.data?.message ?? 'Failed to save author. Please try again.');
     }
   } finally {
     formProcessing.value = false;
@@ -74,31 +83,31 @@ async function submitForm(payload) {
 // --- Delete confirmation modal state --------------------------------------
 const deleteTarget = ref(null);
 const deleteBusy = ref(false);
-const deleteError = ref(null);
 
 function askDelete(author) {
   deleteTarget.value = author;
-  deleteError.value = null;
 }
 
 function closeDelete() {
   if (deleteBusy.value) return;
   deleteTarget.value = null;
-  deleteError.value = null;
 }
 
 async function confirmDelete() {
   if (!deleteTarget.value) return;
   deleteBusy.value = true;
-  deleteError.value = null;
+  const name = deleteTarget.value.name ?? 'Author';
   try {
     await axios.delete(route('api.authors.destroy', { author: deleteTarget.value.id }));
     deleteTarget.value = null;
     refreshList();
+    toast.success(`"${name}" was deleted.`);
   } catch (e) {
-    // 409 = AuthorHasBooks — surface the server message in the modal so the
-    // user understands why the delete was refused.
-    deleteError.value = e?.response?.data?.message ?? 'Failed to delete author.';
+    // 409 = AuthorHasBooks — surface the server message via toast so the
+    // user understands why the delete was refused. Close the modal either
+    // way; the message is preserved in the toast queue.
+    deleteTarget.value = null;
+    toast.error(e?.response?.data?.message ?? 'Failed to delete author.');
   } finally {
     deleteBusy.value = false;
   }
@@ -142,7 +151,6 @@ function flattenLaravelErrors(errors) {
         <h3 class="text-lg font-semibold text-gray-900 mb-4">
           {{ formMode === 'edit' ? 'Edit author' : 'Add a new author' }}
         </h3>
-        <p v-if="formErrors._form" class="mb-3 text-sm text-red-600">{{ formErrors._form }}</p>
         <AuthorForm
           v-if="formOpen"
           :key="formTarget?.id ?? 'new'"
@@ -160,10 +168,10 @@ function flattenLaravelErrors(errors) {
     <ConfirmModal
       :show="!!deleteTarget"
       title="Delete author"
-      :message="deleteError ?? `Delete the author: ${deleteTarget?.name ?? ''}?`"
-      :confirm-label="deleteError ? 'OK' : 'Delete'"
+      :message="`Delete the author: ${deleteTarget?.name ?? ''}?`"
+      confirm-label="Delete"
       :busy="deleteBusy"
-      @confirm="deleteError ? closeDelete() : confirmDelete()"
+      @confirm="confirmDelete"
       @close="closeDelete"
     />
   </AuthenticatedLayout>

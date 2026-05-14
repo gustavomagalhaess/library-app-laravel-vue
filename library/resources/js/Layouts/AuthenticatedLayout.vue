@@ -4,11 +4,14 @@
  * Replaces Breeze's default layout, which links to a `profile.edit` route
  * we don't expose (Fortify handles auth, no profile controller is shipped).
  */
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
+import Toaster from '@/Components/shared/Toaster.vue';
+import { useToasts } from '@/composables/useToasts.js';
 
 const showMobile = ref(false);
 const page = usePage();
+const toast = useToasts();
 
 const user = computed(() => page.props.auth?.user ?? null);
 const permissions = computed(() => page.props.auth?.permissions ?? []);
@@ -17,8 +20,19 @@ const can = (perm) => Array.isArray(permissions.value)
   ? permissions.value.includes(perm)
   : !!permissions.value?.includes?.(perm);
 
-const flashStatus = computed(() => page.props.flash?.status);
-const flashError = computed(() => page.props.flash?.error);
+// Server-side flash messages still work for traditional Inertia navigations
+// (e.g. profile/logout). They're forwarded into the toast queue so we have a
+// single notification mechanism — no more competing banners.
+watch(
+  () => page.props.flash?.status,
+  (msg) => { if (msg) toast.success(msg); },
+  { immediate: true },
+);
+watch(
+  () => page.props.flash?.error,
+  (msg) => { if (msg) toast.error(msg); },
+  { immediate: true },
+);
 
 function logout() {
   router.post(route('logout'));
@@ -92,18 +106,13 @@ function logout() {
       </div>
     </header>
 
-    <!-- Flash messages -->
-    <div v-if="flashStatus || flashError" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-      <div v-if="flashStatus" class="rounded bg-green-50 border border-green-200 text-green-800 px-4 py-2 text-sm">
-        {{ flashStatus }}
-      </div>
-      <div v-if="flashError" class="rounded bg-red-50 border border-red-200 text-red-800 px-4 py-2 text-sm">
-        {{ flashError }}
-      </div>
-    </div>
-
     <main>
       <slot />
     </main>
+
+    <!-- Single global toast queue for both API responses (pushed from pages
+         via useToasts) and Inertia flash messages (forwarded by the watchers
+         above). -->
+    <Toaster />
   </div>
 </template>

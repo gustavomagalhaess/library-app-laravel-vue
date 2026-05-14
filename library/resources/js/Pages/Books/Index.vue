@@ -7,6 +7,7 @@ import BookList from '@/Components/book/BookList.vue';
 import BookForm from '@/Components/book/BookForm.vue';
 import Modal from '@/Components/Modal.vue';
 import ConfirmModal from '@/Components/shared/ConfirmModal.vue';
+import { useToasts } from '@/composables/useToasts.js';
 
 /**
  * Books index page.
@@ -19,13 +20,16 @@ import ConfirmModal from '@/Components/shared/ConfirmModal.vue';
  *   - "Delete"       → opens a ConfirmModal         → DELETE /api/book/{id}
  *
  * After a successful call we ask Inertia to reload only the `books` partial
- * so the table refreshes without a full navigation.
+ * so the table refreshes without a full navigation, and push a toast so the
+ * user sees feedback for the operation.
  */
-const props = defineProps({
+defineProps({
   books: Object,
   filters: Object,
   can: Object,
 });
+
+const toast = useToasts();
 
 // --- Form modal state ------------------------------------------------------
 const formMode = ref(null);              // null | 'create' | 'edit'
@@ -56,8 +60,9 @@ function closeForm() {
 async function submitForm(payload) {
   formProcessing.value = true;
   formErrors.value = {};
+  const isEdit = formMode.value === 'edit';
 
-  const url = formMode.value === 'edit'
+  const url = isEdit
     ? route('api.media.update', { type: 'book', id: formTarget.value.uuid })
     : route('api.media.store',  { type: 'book' });
 
@@ -68,12 +73,16 @@ async function submitForm(payload) {
     formMode.value = null;
     formTarget.value = null;
     refreshList();
+    toast.success(isEdit ? 'Book updated.' : 'Book added.');
   } catch (e) {
     if (e?.response?.status === 422) {
+      // 422 → field-level errors stay inline next to each input. We don't
+      // toast here because the errors are already visible in the form.
       formErrors.value = flattenLaravelErrors(e.response.data?.errors ?? {});
     } else {
-      // Surface a single banner-style error in the form area.
-      formErrors.value = { _form: e?.response?.data?.message ?? 'Something went wrong.' };
+      // Everything else (500, network, etc.) → toast. The form stays open
+      // so the user can retry without re-entering everything.
+      toast.error(e?.response?.data?.message ?? 'Failed to save book. Please try again.');
     }
   } finally {
     formProcessing.value = false;
@@ -96,14 +105,15 @@ function closeDelete() {
 async function confirmDelete() {
   if (!deleteTarget.value) return;
   deleteBusy.value = true;
+  const title = deleteTarget.value.media?.title ?? 'Book';
   try {
     await axios.delete(route('api.media.destroy', { type: 'book', id: deleteTarget.value.uuid }));
     deleteTarget.value = null;
     refreshList();
+    toast.success(`"${title}" was deleted.`);
   } catch (e) {
-    // For now we just close the modal — a future improvement is to surface
-    // the server message inline. The error is still logged by the server.
     deleteTarget.value = null;
+    toast.error(e?.response?.data?.message ?? 'Failed to delete book.');
   } finally {
     deleteBusy.value = false;
   }
@@ -154,7 +164,6 @@ function flattenLaravelErrors(errors) {
         <h3 class="text-lg font-semibold text-gray-900 mb-4">
           {{ formMode === 'edit' ? 'Edit book' : 'Add a new book' }}
         </h3>
-        <p v-if="formErrors._form" class="mb-3 text-sm text-red-600">{{ formErrors._form }}</p>
         <BookForm
           v-if="formOpen"
           :key="formTarget?.uuid ?? 'new'"
