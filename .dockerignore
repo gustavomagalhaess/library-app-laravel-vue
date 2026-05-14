@@ -1,0 +1,12 @@
+.git
+.idea
+.vscode
+docs
+node_modules
+library/vendor
+library/node_modules
+library/.env
+library/storage/logs/*
+library/storage/framework/cache/data/*
+library/storage/framework/sessions/*
+library/storage/framework/views/*

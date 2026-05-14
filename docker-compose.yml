@@ -1,0 +1,96 @@
+services:
+  app:
+    build:
+      context: ./docker/php
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+    container_name: library-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      # Single bind mount — uploaded book PDFs live at
+      # ./library/storage/app/private/books on the host. Same UID/GID, no
+      # named-volume permission dance.
+      - ./library:/var/www/html
+    environment:
+      PHP_IDE_CONFIG: serverName=library
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      IDE_KEY: ${IDE_KEY:-library}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # needed on Linux; harmless on macOS
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - library-net
+
+  web:
+    build:
+      context: ./docker/nginx
+    container_name: library-web
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ./library:/var/www/html:ro
+    depends_on:
+      - app
+    networks:
+      - library-net
+
+  db:
+    image: mysql:8.4
+    container_name: library-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE:-library}
+      MYSQL_USER: ${DB_USERNAME:-library}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - library-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: library-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - library-net
+
+  node:
+    image: node:22-alpine
+    container_name: library-node
+    working_dir: /var/www/html
+    volumes:
+      - ./library:/var/www/html
+    ports:
+      - "${VITE_PORT:-5173}:5173"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    profiles: ["dev"]
+    networks:
+      - library-net
+
+volumes:
+  db-data:
+  redis-data:
+
+networks:
+  library-net:
+    driver: bridge

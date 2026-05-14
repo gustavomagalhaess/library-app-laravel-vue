@@ -1,0 +1,14 @@
+.env
+.DS_Store
+node_modules/
+library/vendor/
+library/node_modules/
+library/.env
+library/storage/app/private/books/*
+!library/storage/app/private/books/.gitkeep
+library/storage/framework/cache/data/*
+library/storage/framework/sessions/*
+library/storage/framework/views/*
+library/storage/logs/*
+library/public/build/
+library/public/hot
