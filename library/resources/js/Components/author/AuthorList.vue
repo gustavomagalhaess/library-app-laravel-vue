@@ -1,10 +1,10 @@
 <script setup>
 import { router } from '@inertiajs/vue3';
-import EditButton from '@/Components/shared/EditButton.vue';
 import Pagination from '@/Components/shared/Pagination.vue';
 import SearchBar from '@/Components/shared/SearchBar.vue';
-import DeleteButton from '@/Components/shared/DeleteButton.vue';
-import AddButton from '@/Components/shared/AddButton.vue';
+import SuccessButton from "@/Components/SuccessButton.vue";
+import WarningButton from "@/Components/WarningButton.vue";
+import DeleteButton from "@/Components/shared/DeleteButton.vue";
 
 /**
  * Renders the authors table. Like BookList, this component is purely
@@ -32,10 +32,10 @@ function search(term) {
   <div class="space-y-4">
     <div class="flex items-center justify-between gap-4">
       <h2 class="text-xl font-semibold text-gray-800"></h2>
-      <AddButton
+      <SuccessButton
         v-if="can.create"
         @click="emit('new')"
-      >+ New author</AddButton>
+      >+ New author</SuccessButton>
     </div>
 
     <SearchBar
@@ -58,10 +58,10 @@ function search(term) {
             <td class="px-4 py-2 text-sm font-medium text-gray-800">{{ author.name }}</td>
             <td class="px-4 py-2 text-sm text-gray-600">{{ author.books_count ?? 0 }}</td>
             <td class="px-4 py-2 text-right space-x-1">
-              <EditButton
+              <WarningButton
                 v-if="can.update"
                 @click="emit('edit', author)"
-              />
+              >Edit</WarningButton>
               <DeleteButton
                 v-if="can.delete"
                 @confirm="emit('delete', author)"

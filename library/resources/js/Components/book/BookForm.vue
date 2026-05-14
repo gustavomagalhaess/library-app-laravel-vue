@@ -4,8 +4,8 @@ import axios from 'axios';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
-import CancelButton from '@/Components/shared/CancelButton.vue';
 import SuccessButton from '@/Components/SuccessButton.vue';
+import DangerButton from "@/Components/DangerButton.vue";
 
 /**
  * The Book create / edit form, designed to live inside a modal on the
@@ -41,6 +41,7 @@ const form = reactive({
   // title / publication_year live on the shared media row.
   title: props.book?.media?.title ?? '',
   publication_year: props.book?.media?.publication_year ?? new Date().getFullYear(),
+  pages: props.book?.pages ?? 0,
   file: null,
   // Internal: we hold the chosen authors as objects, then split them into
   // ids[]/new[] right before submit.
@@ -58,6 +59,7 @@ function onTypeahead() {
     suggestions.value = [];
     return;
   }
+
   typeaheadTimer = setTimeout(async () => {
     try {
       const { data } = await axios.get(route('authors.search'), { params: { q: queryText.value } });
@@ -96,6 +98,7 @@ function submit() {
   const data = new FormData();
   data.append('title', form.title ?? '');
   data.append('publication_year', String(form.publication_year ?? ''));
+  data.append('pages', String(form.pages ?? ''));
   if (form.file) {
     data.append('file', form.file);
   }
@@ -182,6 +185,15 @@ function onFileChange(e) {
     </div>
 
     <div>
+      <InputLabel value="Pages"/>
+      <TextInput
+        v-model.number="form.pages"
+        type="number"
+        class="mt-1 block w-full"
+      />
+    </div>
+
+    <div>
       <InputLabel>
         File (PDF) <span v-if="isEdit" class="text-xs text-gray-400">— leave empty to keep current file</span>
       </InputLabel>
@@ -195,9 +207,9 @@ function onFileChange(e) {
     </div>
 
     <div class="flex justify-end gap-2">
-      <CancelButton type="button" @click="emit('cancel')">
+      <DangerButton type="button" @click="emit('cancel')">
           Cancel
-      </CancelButton>
+      </DangerButton>
       <SuccessButton
         type="submit"
         :disabled="processing"

@@ -1,11 +1,11 @@
 <script setup>
 import { router } from '@inertiajs/vue3';
-import EditButton from '@/Components/shared/EditButton.vue';
-import DeleteButton from '@/Components/shared/DeleteButton.vue';
 import DownloadButton from '@/Components/shared/DownloadButton.vue';
-import AddButton from '@/Components/shared/AddButton.vue';
 import Pagination from '@/Components/shared/Pagination.vue';
 import SearchBar from '@/Components/shared/SearchBar.vue';
+import SuccessButton from "@/Components/SuccessButton.vue";
+import WarningButton from "@/Components/WarningButton.vue";
+import DeleteButton from "@/Components/shared/DeleteButton.vue";
 
 /**
  * Renders the books table.
@@ -35,10 +35,10 @@ function search(term) {
   <div class="space-y-4">
     <div class="flex items-center justify-between gap-4">
       <h2 class="text-xl font-semibold text-gray-800"></h2>
-      <AddButton
+      <SuccessButton
         v-if="can.create"
         @click="emit('new')"
-      >+ New book</AddButton>
+      >+ New book</SuccessButton>
     </div>
 
     <SearchBar
@@ -53,7 +53,8 @@ function search(term) {
           <tr>
             <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Title</th>
             <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Author(s)</th>
-            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Year</th>
+              <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Pages</th>
+              <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Year</th>
             <th class="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
           </tr>
         </thead>
@@ -66,16 +67,17 @@ function search(term) {
               </span>
               <span v-else class="italic text-gray-400">—</span>
             </td>
-            <td class="px-4 py-2 text-sm text-gray-600">{{ book.media?.publication_year }}</td>
+              <td class="px-4 py-2 text-sm text-gray-600">{{ book.pages }}</td>
+              <td class="px-4 py-2 text-sm text-gray-600">{{ book.media?.publication_year }}</td>
             <td class="px-4 py-2 text-right space-x-1">
               <DownloadButton
                 v-if="can.download"
                 :href="route('media.download', { type: 'book', id: book.uuid })"
               />
-              <EditButton
+              <WarningButton
                 v-if="can.update"
                 @click="emit('edit', book)"
-              />
+              >Edit</WarningButton>
               <DeleteButton
                 v-if="can.delete"
                 @confirm="emit('delete', book)"

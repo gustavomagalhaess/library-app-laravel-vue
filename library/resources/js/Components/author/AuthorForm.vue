@@ -3,8 +3,8 @@ import { reactive, computed } from 'vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
-import CancelButton from '@/Components/shared/CancelButton.vue';
 import SuccessButton from '@/Components/SuccessButton.vue';
+import DangerButton from "@/Components/DangerButton.vue";
 
 /**
  * The Author create / edit form, designed to live inside a modal on the
@@ -44,9 +44,9 @@ function submit() {
     </div>
 
     <div class="flex justify-end gap-2">
-      <CancelButton type="button" @click="emit('cancel')">
+      <DangerButton type="button" @click="emit('cancel')">
           Cancel
-      </CancelButton>
+      </DangerButton>
       <SuccessButton
         type="submit"
         :disabled="processing"
