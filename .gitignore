@@ -1,3 +1,4 @@
+.idea/
 .env
 .DS_Store
 node_modules/
@@ -12,3 +13,4 @@ library/storage/framework/views/*
 library/storage/logs/*
 library/public/build/
 library/public/hot
+
