@@ -16,8 +16,6 @@ const emit = defineEmits(['confirm']);
 <template>
   <DangerButton
     type="button"
-    class="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded
-           bg-red-600 text-white hover:bg-red-700"
     @click="emit('confirm')"
   >
     Delete

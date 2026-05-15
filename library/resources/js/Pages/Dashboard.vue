@@ -20,17 +20,17 @@ const props = defineProps({
         </template>
 
         <div class="py-12">
-            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                <div
-                    class="overflow-hidden bg-white shadow-sm sm:rounded-lg"
-                >
-                    <div class="p-6 text-gray-900">
-                        <p class="text-lg/relaxed">
-                            <span class="font-bold">Total Books:</span> {{ bookCount }}
+            <div class="mx-auto container sm:px-6 lg:px-8">
+                <div class="max-w-64 rounded overflow-hidden shadow-lg">
+                    <div class="px-6 py-4">
+                        <div class="font-bold text-xl mb-2 text-center">Total Books</div>
+                        <p class="text-gray-700 text-base text-center">
+                            {{ bookCount }}
                         </p>
                     </div>
                 </div>
             </div>
+
         </div>
     </AuthenticatedLayout>
 </template>

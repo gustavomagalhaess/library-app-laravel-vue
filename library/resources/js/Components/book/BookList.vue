@@ -53,8 +53,8 @@ function search(term) {
           <tr>
             <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Title</th>
             <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Author(s)</th>
-              <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Pages</th>
-              <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Year</th>
+            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Pages</th>
+            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Year</th>
             <th class="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
           </tr>
         </thead>
