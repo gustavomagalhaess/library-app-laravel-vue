@@ -20,6 +20,16 @@ const form = useForm({
     name: user.name,
     email: user.email,
 });
+
+const updateProfile = () => {
+    // errorBag matches Fortify's validateWithBag('updateProfileInformation').
+    // Without it, Inertia leaves errors nested at errors.updateProfileInformation.*
+    // and form.errors.name / form.errors.email stay empty on a 422.
+    form.put(route('user-profile-information.update'), {
+        errorBag: 'updateProfileInformation',
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
@@ -34,10 +44,11 @@ const form = useForm({
             </p>
         </header>
 
-        <form
-            @submit.prevent="form.patch(route('profile.update'))"
-            class="mt-6 space-y-6"
-        >
+        <!-- Fortify's UpdateUserProfileInformation action lives at
+             PUT /user/profile-information (name: user-profile-information.update).
+             It clears email_verified_at and re-sends the verification mail on
+             email change, so the "verify your email" block below stays useful. -->
+        <form @submit.prevent="updateProfile" class="mt-6 space-y-6">
             <div>
                 <InputLabel for="name" value="Name" />
 

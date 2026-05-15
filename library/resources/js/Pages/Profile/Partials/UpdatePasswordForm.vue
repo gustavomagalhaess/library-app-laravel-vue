@@ -16,7 +16,16 @@ const form = useForm({
 });
 
 const updatePassword = () => {
-    form.put(route('password.update'), {
+    // Fortify exposes the password-change endpoint at PUT /user/password
+    // (route name: user-password.update). NOTE: route('password.update') is a
+    // different thing — it's the *reset* endpoint hit from the email link.
+    //
+    // errorBag matches Fortify's validateWithBag('updatePassword'). Without
+    // this, Inertia keeps the bag nested under errors.updatePassword.* and
+    // form.errors.current_password is always empty — which makes the form
+    // look like a 303-no-op when validation actually failed server-side.
+    form.put(route('user-password.update'), {
+        errorBag: 'updatePassword',
         preserveScroll: true,
         onSuccess: () => form.reset(),
         onError: () => {

@@ -1,8 +1,10 @@
 <script setup>
 /**
  * Minimal authenticated layout for the Library app.
- * Replaces Breeze's default layout, which links to a `profile.edit` route
- * we don't expose (Fortify handles auth, no profile controller is shipped).
+ * Auth/account flows are split between Fortify (profile info, password,
+ * email verification, 2FA) and a tiny app-owned delete-account endpoint
+ * (DELETE /user → DeleteAccountController). The "Profile" link below hosts
+ * the Vue forms that talk to those endpoints.
  */
 import { ref, computed, watch } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
@@ -20,17 +22,30 @@ const can = (perm) => Array.isArray(permissions.value)
   ? permissions.value.includes(perm)
   : !!permissions.value?.includes?.(perm);
 
+// Fortify flashes machine-readable status slugs (e.g. 'password-updated').
+// Translate the ones we surface to humans here so the toast doesn't read like
+// a kebab-case identifier. Anything not in this table falls through verbatim,
+// which works fine for our own controllers that flash full sentences.
+const FLASH_LABELS = {
+  'password-updated': 'Password updated.',
+  'profile-information-updated': 'Profile updated.',
+  'verification-link-sent': 'Verification link sent.',
+  'two-factor-authentication-enabled': 'Two-factor authentication enabled.',
+  'two-factor-authentication-disabled': 'Two-factor authentication disabled.',
+  'recovery-codes-generated': 'Recovery codes regenerated.',
+};
+
 // Server-side flash messages still work for traditional Inertia navigations
 // (e.g. profile/logout). They're forwarded into the toast queue so we have a
 // single notification mechanism — no more competing banners.
 watch(
   () => page.props.flash?.status,
-  (msg) => { if (msg) toast.success(msg); },
+  (msg) => { if (msg) toast.success(FLASH_LABELS[msg] ?? msg); },
   { immediate: true },
 );
 watch(
   () => page.props.flash?.error,
-  (msg) => { if (msg) toast.error(msg); },
+  (msg) => { if (msg) toast.error(FLASH_LABELS[msg] ?? msg); },
   { immediate: true },
 );
 
@@ -69,10 +84,12 @@ function logout() {
             </div>
           </div>
 
-          <div class="hidden sm:flex sm:items-center">
-            <span v-if="user" class="text-sm text-gray-600 mr-4">
-              {{ user.name }}
-            </span>
+          <div class="hidden sm:flex sm:items-center gap-4">
+            <Link
+              v-if="user"
+              :href="route('profile.edit')"
+              class="text-sm text-gray-600 hover:text-indigo-600"
+            >{{ user.name }}</Link>
             <button
               type="button"
               class="text-sm text-gray-600 hover:text-red-600"
@@ -95,6 +112,7 @@ function logout() {
           <Link :href="route('dashboard')" class="block py-2 text-sm text-gray-700">Dashboard</Link>
           <Link v-if="can('books.view')" :href="route('media.index', { type: 'book' })" class="block py-2 text-sm text-gray-700">Books</Link>
           <Link v-if="can('authors.view')" :href="route('authors.index')" class="block py-2 text-sm text-gray-700">Authors</Link>
+          <Link v-if="user" :href="route('profile.edit')" class="block py-2 text-sm text-gray-700">Profile</Link>
           <button type="button" class="block py-2 text-sm text-red-600" @click="logout">Log out</button>
         </div>
       </div>

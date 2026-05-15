@@ -22,7 +22,9 @@ const confirmUserDeletion = () => {
 };
 
 const deleteUser = () => {
-    form.delete(route('profile.destroy'), {
+    // Fortify doesn't ship an account-delete endpoint — we have a tiny
+    // DeleteAccountController at DELETE /user (route: current-user.destroy).
+    form.delete(route('current-user.destroy'), {
         preserveScroll: true,
         onSuccess: () => closeModal(),
         onError: () => passwordInput.value.focus(),
