@@ -1,7 +1,6 @@
 <script setup>
 defineProps({
   href: { type: String, required: true },
-  label: { type: String, default: 'Download' },
 });
 </script>
 
@@ -15,6 +14,6 @@ defineProps({
         hover:bg-gray-50 focus:outline-none focus:ring-2
         focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25"
   >
-    {{ label }}
+      <slot />
   </a>
 </template>

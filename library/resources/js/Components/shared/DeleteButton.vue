@@ -18,6 +18,6 @@ const emit = defineEmits(['confirm']);
     type="button"
     @click="emit('confirm')"
   >
-    Delete
+    <slot />
   </DangerButton>
 </template>

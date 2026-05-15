@@ -128,9 +128,6 @@ function flattenLaravelErrors(errors) {
 <template>
   <Head title="Authors" />
   <AuthenticatedLayout>
-    <template #header>
-      <h2 class="font-semibold text-xl text-gray-800 leading-tight">Authors</h2>
-    </template>
 
     <div class="py-8">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
