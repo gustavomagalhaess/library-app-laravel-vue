@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
+import SuccessButton from "@/Components/SuccessButton.vue";
 
 const props = defineProps({
     bookCount: { type: Number, required: true },
@@ -9,7 +10,6 @@ const props = defineProps({
 
 <template>
     <Head title="Dashboard" />
-
     <AuthenticatedLayout>
         <template #header>
             <h2
@@ -19,7 +19,7 @@ const props = defineProps({
             </h2>
         </template>
 
-        <div class="py-12">
+        <div class="py-8">
             <div class="mx-auto container sm:px-6 lg:px-8">
                 <div class="max-w-64 rounded overflow-hidden shadow-lg">
                     <div class="px-6 py-4">
