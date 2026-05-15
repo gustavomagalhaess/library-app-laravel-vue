@@ -20,11 +20,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * Front controller for every media type the application supports.
  *
- * The {type} segment of the URL selects which Domain service handles the
- * request. The controller is responsible for the cross-type concerns —
- * validating the shared fields (title, publication_year, file), checking
- * permissions, mapping each type to its Inertia page — while the
- * type-specific business rules live behind the matching service.
+ * Every action takes the `{type}` URL segment and forwards it to the unified
+ * {@see MediaService}. There is no per-type dispatch (no `serviceFor()`,
+ * no `BookService`) — adding a media type only means adding a Model +
+ * migration + a line in config/media.php.
  *
  * Reads (Inertia, declared in routes/web.php):
  *   GET  /{type}                  → list
@@ -35,9 +34,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *   POST   /api/{type}            → store
  *   POST   /api/{type}/{id}       → update (POST because file uploads can't ride PUT)
  *   DELETE /api/{type}/{id}       → destroy
- *
- * Create / edit no longer have their own pages — the SPA hosts the form
- * inside a modal on the index page and calls the JSON endpoints directly.
  */
 class MediaController extends Controller
 {
@@ -48,13 +44,12 @@ class MediaController extends Controller
     public function index(Request $request, string $type): InertiaResponse
     {
         try {
-            $service = $this->serviceFor($type);
             $query = $this->mediaService->validatedSearchTerm(trim((string) $request->query('q', '')));
             $page = $this->mediaService->pageFor($type, 'index');
             $mediaType = Str::plural(Str::lower($type));
 
             return Inertia::render($page, [
-                $mediaType => $service->list($query),
+                $mediaType => $this->mediaService->list($type, $query),
                 'filters' => ['q' => $query],
                 'can' => $this->mediaService->permissionsFor($request->user(), $type),
                 'type' => $type,
@@ -70,10 +65,9 @@ class MediaController extends Controller
     public function search(Request $request, string $type): JsonResponse
     {
         try {
-            $service = $this->serviceFor($type);
             $query = $this->mediaService->validatedSearchTerm(trim((string) $request->query('q', '')));
 
-            return response()->json($service->list($query));
+            return response()->json($this->mediaService->list($type, $query));
         } catch (MediaException $e) {
             abort(404, $e->getMessage());
         } catch (\Throwable $e) {
@@ -85,11 +79,12 @@ class MediaController extends Controller
     public function store(StoreMediaRequest $request, string $type): JsonResponse
     {
         try {
-            $service = $this->serviceFor($type);
             // The shared fields (title/publication_year/file) come from the
-            // FormRequest; type-specific fields (pages for Book) are passed
-            // through and validated inside the service.
-            $record = $service->create(
+            // FormRequest; subtype-specific fields are pulled out by name and
+            // validated inside the service against the rules declared on the
+            // subtype model.
+            $record = $this->mediaService->create(
+                type: $type,
                 attributes: array_merge(
                     $request->safe()->only(['title', 'publication_year']),
                     $request->only($this->mediaService->typeSpecificFields($type)),
@@ -120,14 +115,14 @@ class MediaController extends Controller
     public function update(UpdateMediaRequest $request, string $type, string $id): JsonResponse
     {
         try {
-            $service = $this->serviceFor($type);
-            $record = $service->find($id);
+            $record = $this->mediaService->find($type, $id);
             if ($record === null) {
                 return response()->json(['message' => 'Not found.'], Response::HTTP_NOT_FOUND);
             }
 
-            $updated = $service->update(
-                $record,
+            $updated = $this->mediaService->update(
+                type: $type,
+                record: $record,
                 attributes: array_merge(
                     $request->safe()->only(['title', 'publication_year']),
                     $request->only($this->mediaService->typeSpecificFields($type)),
@@ -158,13 +153,12 @@ class MediaController extends Controller
     public function destroy(string $type, string $id): JsonResponse
     {
         try {
-            $service = $this->serviceFor($type);
-            $record = $service->find($id);
+            $record = $this->mediaService->find($type, $id);
             if ($record === null) {
                 return response()->json(['message' => 'Not found.'], Response::HTTP_NOT_FOUND);
             }
 
-            $service->delete($record);
+            $this->mediaService->delete($type, $record);
 
             return response()->json(null, Response::HTTP_NO_CONTENT);
         } catch (MediaException $e) {
@@ -186,18 +180,6 @@ class MediaController extends Controller
     {
         try {
             return $this->mediaService->download($type, $id);
-        } catch (MediaException $e) {
-            abort(404, $e->getMessage());
-        } catch (\Throwable $e) {
-            app('log')->error($e->getMessage(), ['exception' => $e]);
-            abort(404, MediaMessage::ERROR);
-        }
-    }
-
-    private function serviceFor(string $type)
-    {
-        try {
-            return $this->mediaService->serviceFor($type);
         } catch (MediaException $e) {
             abort(404, $e->getMessage());
         } catch (\Throwable $e) {

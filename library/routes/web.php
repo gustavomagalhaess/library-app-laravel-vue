@@ -35,7 +35,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     |
     */
     Route::prefix('{type}')
-        ->whereIn('type', ['book'])
+        // Allow every type registered in config/media.php — adding 'movie'
+        // there is enough to enable /movie, /movie/search, /movie/{id}/download.
+        ->whereIn('type', array_keys((array) config('media.types', [])))
         ->group(function (): void {
             // Search must be declared *before* the {id} routes so `/book/search`
             // isn't captured by `/{type}/{id}/...`.

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Book\Models;
 
+use App\Domain\Media\Contracts\MediaSubtype;
 use App\Domain\Media\Models\Media;
-use App\Domain\ModelInterface;
 use Database\Factories\BookFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,11 +22,17 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
  * `$book->media->title`, `$book->media->authors`, etc. — so future media
  * subtypes (Movie, Music) don't have to redeclare those accessors.
  *
+ * Per-type metadata (morph alias, storage disk, subtype fields, validation
+ * rules) is exposed through {@see MediaSubtype}. The unified
+ * {@see \App\Domain\Media\MediaTypeRegistry} introspects this model rather
+ * than maintaining a separate registry — so adding a new media type only
+ * requires a model + migration + one line in config/media.php.
+ *
  * @property string     $uuid
  * @property int|null   $pages
  * @property-read Media $media
  */
-class Book extends Model implements ModelInterface
+class Book extends Model implements MediaSubtype
 {
     /** @use HasFactory<BookFactory> */
     use HasFactory;
@@ -76,8 +82,30 @@ class Book extends Model implements ModelInterface
         return BookFactory::new();
     }
 
-    static public function getSpecificFields(): array
+    // ---------------------------------------------------------------------
+    // MediaSubtype contract
+    // ---------------------------------------------------------------------
+
+    public static function getMorphAlias(): string
+    {
+        return self::MORPH_ALIAS;
+    }
+
+    public static function getDisk(): string
+    {
+        return 'books';
+    }
+
+    public static function getSpecificFields(): array
     {
         return ['pages'];
+    }
+
+    public static function getValidationRules(): array
+    {
+        return [
+            // 65535 = SMALLINT upper bound — matches the migration column.
+            'pages' => ['nullable', 'integer', 'between:1,65535'],
+        ];
     }
 }

@@ -37,7 +37,9 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function (): void {
     | per resource is documented in the README.
     */
     Route::prefix('{type}')
-        ->whereIn('type', ['book'])
+        // Same source of truth as routes/web.php — config/media.php is the
+        // only place the supported type list is hard-coded.
+        ->whereIn('type', array_keys((array) config('media.types', [])))
         ->group(function (): void {
             Route::post('/', [MediaController::class, 'store'])
                 ->middleware('can:media.create,type')
