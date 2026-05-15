@@ -6,6 +6,12 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
+/**
+ * Covers the /profile page plus the Fortify-native profile-information update
+ * endpoint (PUT /user/profile-information) and the app's own account-delete
+ * endpoint (DELETE /user → DeleteAccountController). The old Breeze
+ * ProfileController has been removed; tests are aligned with that.
+ */
 class ProfileTest extends TestCase
 {
     use RefreshDatabase;
@@ -25,9 +31,13 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create();
 
+        // Fortify's UpdateUserProfileInformation action lives at
+        // PUT /user/profile-information. On success it redirects back, so we
+        // set the Referer via from('/profile') so the redirect resolves there.
         $response = $this
             ->actingAs($user)
-            ->patch('/profile', [
+            ->from('/profile')
+            ->put('/user/profile-information', [
                 'name' => 'Test User',
                 'email' => 'test@example.com',
             ]);
@@ -40,6 +50,8 @@ class ProfileTest extends TestCase
 
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
+        // Email changed → Fortify clears email_verified_at and re-sends the
+        // verification mail so the user re-verifies the new address.
         $this->assertNull($user->email_verified_at);
     }
 
@@ -49,7 +61,8 @@ class ProfileTest extends TestCase
 
         $response = $this
             ->actingAs($user)
-            ->patch('/profile', [
+            ->from('/profile')
+            ->put('/user/profile-information', [
                 'name' => 'Test User',
                 'email' => $user->email,
             ]);
@@ -65,9 +78,12 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create();
 
+        // DeleteAccountController is registered at DELETE /user
+        // (route name: current-user.destroy). It validates current_password,
+        // logs out, deletes the user, and redirects to /.
         $response = $this
             ->actingAs($user)
-            ->delete('/profile', [
+            ->delete('/user', [
                 'password' => 'password',
             ]);
 
@@ -86,10 +102,12 @@ class ProfileTest extends TestCase
         $response = $this
             ->actingAs($user)
             ->from('/profile')
-            ->delete('/profile', [
+            ->delete('/user', [
                 'password' => 'wrong-password',
             ]);
 
+        // DeleteAccountController validates via $request->validate(...) which
+        // uses the default error bag, so no third arg here.
         $response
             ->assertSessionHasErrors('password')
             ->assertRedirect('/profile');

@@ -15,10 +15,12 @@ class PasswordUpdateTest extends TestCase
     {
         $user = User::factory()->create();
 
+        // Fortify exposes the change-password endpoint at PUT /user/password
+        // (route name: user-password.update). Breeze used PUT /password.
         $response = $this
             ->actingAs($user)
             ->from('/profile')
-            ->put('/password', [
+            ->put('/user/password', [
                 'current_password' => 'password',
                 'password' => 'new-password',
                 'password_confirmation' => 'new-password',
@@ -38,14 +40,18 @@ class PasswordUpdateTest extends TestCase
         $response = $this
             ->actingAs($user)
             ->from('/profile')
-            ->put('/password', [
+            ->put('/user/password', [
                 'current_password' => 'wrong-password',
                 'password' => 'new-password',
                 'password_confirmation' => 'new-password',
             ]);
 
+        // Fortify's UpdateUserPassword action uses validateWithBag('updatePassword'),
+        // so errors land in the named bag — not the default one. Without
+        // specifying it, assertSessionHasErrors looks at the default bag and
+        // sees nothing.
         $response
-            ->assertSessionHasErrors('current_password')
+            ->assertSessionHasErrors('current_password', null, 'updatePassword')
             ->assertRedirect('/profile');
     }
 }

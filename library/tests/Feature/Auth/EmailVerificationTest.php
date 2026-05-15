@@ -17,7 +17,10 @@ class EmailVerificationTest extends TestCase
     {
         $user = User::factory()->unverified()->create();
 
-        $response = $this->actingAs($user)->get('/verify-email');
+        // Fortify exposes the notice page at /email/verify (route name
+        // verification.notice). Breeze used /verify-email — keeping the test
+        // honest about the actual endpoint we ship.
+        $response = $this->actingAs($user)->get('/email/verify');
 
         $response->assertStatus(200);
     }
