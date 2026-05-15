@@ -21,9 +21,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * Front controller for every media type the application supports.
  *
  * Every action takes the `{type}` URL segment and forwards it to the unified
- * {@see MediaService}. There is no per-type dispatch (no `serviceFor()`,
- * no `BookService`) — adding a media type only means adding a Model +
- * migration + a line in config/media.php.
+ * {@see MediaService}. There is no per-type dispatch (no `BookService`) — adding
+ * a media type only means adding a Model + migration + a line in config/media.php.
  *
  * Reads (Inertia, declared in routes/web.php):
  *   GET  /{type}                  → list

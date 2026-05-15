@@ -39,9 +39,9 @@ final readonly class EloquentMediaRepository implements MediaRepositoryInterface
 
     public function paginate(string $type, ?string $query, int $perPage = 15): LengthAwarePaginator
     {
-        $def = $this->registry->for($type);
-        $modelClass = $def->modelClass;
-        $table = $def->table;
+        $definition = $this->registry->for($type);
+        $modelClass = $definition->modelClass;
+        $table = $definition->table;
 
         return $modelClass::query()
             // Always pull the morph parent + authors so the JSON payload

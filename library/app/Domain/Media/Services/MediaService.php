@@ -53,7 +53,7 @@ final readonly class MediaService
     /** Returns the trimmed search term iff it meets the 3-char minimum. */
     public function validatedSearchTerm(string $term): ?string
     {
-        return mb_strlen($term) >= 3 ? $term : null;
+        return Str::length($term) >= 3 ? $term : null;
     }
 
     /**
@@ -223,14 +223,14 @@ final readonly class MediaService
      */
     private function validateSubtypeFields(string $type, array $attributes): array
     {
-        $def = $this->registry->for($type);
-        $subtypeOnly = array_intersect_key($attributes, array_flip($def->specificFields));
+        $definition = $this->registry->for($type);
+        $subtypeOnly = array_intersect_key($attributes, array_flip($definition->specificFields));
 
-        if ($subtypeOnly === [] || $def->validationRules === []) {
+        if ($subtypeOnly === [] || $definition->validationRules === []) {
             return $subtypeOnly;
         }
 
-        $validator = Validator::make($subtypeOnly, $def->validationRules);
+        $validator = Validator::make($subtypeOnly, $definition->validationRules);
         if ($validator->fails()) {
             throw new ValidationException($validator);
         }

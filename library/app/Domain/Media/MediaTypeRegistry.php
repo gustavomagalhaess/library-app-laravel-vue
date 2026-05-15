@@ -32,10 +32,12 @@ final class MediaTypeRegistry
     public function __construct(array $map)
     {
         foreach ($map as $type => $modelClass) {
+            $type = Str::lower($type);
+
             // Sanity-check that the model implements the contract — otherwise
             // every downstream introspection (disk, fields, rules) would die
             // with a cryptic "method not found" deep inside the request.
-            if (!is_subclass_of($modelClass, MediaSubtype::class)) {
+            if (! is_subclass_of($modelClass, MediaSubtype::class)) {
                 throw new \InvalidArgumentException(
                     "Media subtype model [$modelClass] for type '$type' must implement ".MediaSubtype::class,
                 );
@@ -53,7 +55,7 @@ final class MediaTypeRegistry
                 );
             }
 
-            $this->byType[Str::lower($type)] = new MediaTypeDefinition(
+            $this->byType[$type] = new MediaTypeDefinition(
                 type: $type,
                 modelClass: $modelClass,
                 table: (new $modelClass)->getTable(),
@@ -90,9 +92,10 @@ final class MediaTypeRegistry
     public function morphMap(): array
     {
         $map = [];
-        foreach ($this->byType as $def) {
-            $map[$def->type] = $def->modelClass;
+        foreach ($this->byType as $definition) {
+            $map[$definition->type] = $definition->modelClass;
         }
+
         return $map;
     }
 }
