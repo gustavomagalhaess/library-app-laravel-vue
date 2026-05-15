@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Account\DeleteAccountController;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MediaController;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -15,6 +18,28 @@ Route::get('/', fn () => Inertia::render('Welcome', [
     'laravelVersion' => Application::VERSION,
     'phpVersion' => PHP_VERSION,
 ]))->name('home');
+
+/*
+|--------------------------------------------------------------------------
+| Profile (auth only — verified middleware is intentionally omitted so an
+| unverified user can still reach /profile to fix the email address that's
+| blocking their verification email).
+|--------------------------------------------------------------------------
+|
+| Profile information updates and password changes live on Fortify's native
+| routes (user-profile-information.update, user-password.update); we only
+| need a page to host the Vue forms and a dedicated delete-account endpoint.
+*/
+Route::middleware('auth')->group(function (): void {
+    Route::get('/profile', function (Request $request) {
+        return Inertia::render('Profile/Edit', [
+            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'status' => session('status'),
+        ]);
+    })->name('profile.edit');
+
+    Route::delete('/user', DeleteAccountController::class)->name('current-user.destroy');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -68,5 +93,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('authors.index');
 });
 
-// Fortify auth routes (login, register, password reset, etc.) are registered
-// automatically by Laravel\Fortify\FortifyServiceProvider — no manual require.
+// Fortify auth routes (login, register, password reset, email verification,
+// profile-information update, password update, password confirmation, 2FA)
+// are registered automatically by Laravel\Fortify\FortifyServiceProvider —
+// no manual require.
