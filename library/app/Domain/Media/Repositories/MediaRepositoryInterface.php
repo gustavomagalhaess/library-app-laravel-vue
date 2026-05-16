@@ -22,7 +22,7 @@ interface MediaRepositoryInterface
     /**
      * @return LengthAwarePaginator<Model>
      */
-    public function paginate(string $type, ?string $query, int $perPage = 15): LengthAwarePaginator;
+    public function paginate(string $type, ?string $query, int $perPage = 10): LengthAwarePaginator;
 
     public function find(string $type, string $uuid): ?Model;
 

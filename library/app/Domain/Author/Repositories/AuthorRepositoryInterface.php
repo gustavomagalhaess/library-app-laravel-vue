@@ -15,7 +15,7 @@ interface AuthorRepositoryInterface
      *
      * @return LengthAwarePaginator<Author>
      */
-    public function paginate(?string $query, int $perPage = 15): LengthAwarePaginator;
+    public function paginate(?string $query, int $perPage = 10): LengthAwarePaginator;
 
     public function find(int $id): ?Author;
 

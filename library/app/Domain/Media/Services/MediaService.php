@@ -107,7 +107,7 @@ final readonly class MediaService
     /**
      * @return LengthAwarePaginator<Model>
      */
-    public function list(string $type, ?string $query = null, int $perPage = 15): LengthAwarePaginator
+    public function list(string $type, ?string $query = null, int $perPage = 10): LengthAwarePaginator
     {
         return $this->mediaRepository->paginate($type, $query, $perPage);
     }
