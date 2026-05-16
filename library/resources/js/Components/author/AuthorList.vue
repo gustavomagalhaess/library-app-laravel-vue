@@ -51,17 +51,17 @@ function search(term) {
 
     <div class="bg-white shadow rounded overflow-hidden">
       <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+        <thead class="text-xs font-semibold uppercase bg-gray-50 dark:bg-gray-500 text-gray-600 dark:text-gray-300">
           <tr>
-            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Name</th>
-            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Books</th>
-            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+            <th class="px-4 py-2 text-left">Name</th>
+            <th class="px-4 py-2 text-left">Books</th>
+            <th class="px-4 py-2 text-right">Actions</th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-100">
+        <tbody class="bg-white dark:bg-gray-300 divide-y divide-gray-100 dark:divide-gray-500 text-gray-600 dark:text-gray-800">
           <tr v-for="author in authors.data" :key="author.id">
-            <td class="px-4 py-2 text-sm font-medium text-gray-800">{{ author.name }}</td>
-            <td class="px-4 py-2 text-sm text-gray-600">{{ author.books_count ?? 0 }}</td>
+            <td class="px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-950">{{ author.name }}</td>
+            <td class="px-4 py-2 text-sm">{{ author.books_count ?? 0 }}</td>
             <td class="px-4 py-2 text-right space-x-1">
               <WarningButton
                 v-if="can.update"

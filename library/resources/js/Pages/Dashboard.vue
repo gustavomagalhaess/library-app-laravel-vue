@@ -12,9 +12,7 @@ const props = defineProps({
     <Head title="Dashboard" />
     <AuthenticatedLayout>
         <template #header>
-            <h2
-                class="text-xl font-semibold leading-tight text-gray-800"
-            >
+            <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-white/40">
                 Dashboard
             </h2>
         </template>
@@ -22,9 +20,9 @@ const props = defineProps({
         <div class="py-8">
             <div class="mx-auto container sm:px-6 lg:px-8">
                 <div class="max-w-64 rounded overflow-hidden shadow-lg">
-                    <div class="px-6 py-4">
+                    <div class="px-6 py-4 text-gray-700 dark:text-white/30 dark:bg-gray-700">
                         <div class="font-bold text-xl mb-2 text-center">Total Books</div>
-                        <p class="text-gray-700 text-base text-center">
+                        <p class="text-base text-center">
                             {{ bookCount }}
                         </p>
                     </div>

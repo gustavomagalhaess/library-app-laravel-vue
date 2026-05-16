@@ -44,7 +44,7 @@ function go(url) {
         :class="[
           link.active
             ? 'bg-indigo-600 text-white border-indigo-600'
-            : 'bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed',
+            : 'bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-70 disabled:cursor-not-allowed',
         ]"
       />
     </div>

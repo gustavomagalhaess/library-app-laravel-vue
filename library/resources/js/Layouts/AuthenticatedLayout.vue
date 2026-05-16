@@ -55,31 +55,31 @@ function logout() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100">
-    <nav class="bg-white border-b border-gray-200">
+  <div class="background-image min-h-screen bg-gray-100 dark:bg-gray-800">
+    <nav class="bg-white border-b border-gray-200 dark:bg-black dark:text-white/50 dark:border-gray-500">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex">
-            <Link :href="route('dashboard')" class="flex items-center font-semibold text-gray-800">
+            <Link :href="route('dashboard')" class="flex items-center font-semibold text-gray-600 dark:text-white/40">
               📚 Library
             </Link>
 
             <div class="hidden sm:flex sm:items-center sm:ml-8 space-x-4">
               <Link
                 :href="route('dashboard')"
-                class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600"
+                class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-white/50 dark:hover:text-indigo-400"
               >Dashboard</Link>
 
               <Link
                 v-if="can('books.view')"
                 :href="route('media.index', { type: 'book' })"
-                class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600"
+                class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-white/50 dark:hover:text-indigo-400"
               >Books</Link>
 
               <Link
                 v-if="can('authors.view')"
                 :href="route('authors.index')"
-                class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600"
+                class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-white/50 dark:hover:text-indigo-400"
               >Authors</Link>
             </div>
           </div>
@@ -88,11 +88,11 @@ function logout() {
             <Link
               v-if="user"
               :href="route('profile.edit')"
-              class="text-sm text-gray-600 hover:text-indigo-600"
+              class="text-sm text-gray-600 hover:text-indigo-600 dark:text-white/50 dark:hover:text-indigo-400"
             >{{ user.name }}</Link>
             <button
               type="button"
-              class="text-sm text-gray-600 hover:text-red-600"
+              class="text-sm text-gray-600 hover:text-red-600 dark:text-white/50 dark:hover:text-red-400"
               @click="logout"
             >Log out</button>
           </div>
@@ -118,7 +118,7 @@ function logout() {
       </div>
     </nav>
 
-    <header v-if="$slots.header" class="bg-white shadow">
+    <header v-if="$slots.header" class="bg-white dark:bg-gray-800 shadow-lg">
       <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <slot name="header" />
       </div>
@@ -134,3 +134,10 @@ function logout() {
     <Toaster />
   </div>
 </template>
+<style scoped>
+.background-image {
+    background-image: url('/images/library-bg-2.jpg');
+    background-size: cover;
+    background-position: center;
+}
+</style>
