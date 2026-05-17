@@ -20,7 +20,7 @@ const props = defineProps({
         <div class="py-8">
             <div class="mx-auto container sm:px-6 lg:px-8">
                 <div class="max-w-64 rounded overflow-hidden shadow-lg">
-                    <div class="px-6 py-4 text-gray-700 dark:text-white/30 dark:bg-gray-700">
+                    <div class="px-6 py-4 text-white bg-gray-700 opacity-85">
                         <div class="font-bold text-xl mb-2 text-center">Total Books</div>
                         <p class="text-base text-center">
                             {{ bookCount }}

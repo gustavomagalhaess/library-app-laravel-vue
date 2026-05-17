@@ -52,7 +52,7 @@ function search(term) {
       @search="search"
     />
 
-    <div class="bg-white shadow rounded overflow-hidden">
+    <div class="bg-white opacity-95 shadow rounded overflow-hidden">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="text-xs font-semibold uppercase bg-gray-50 dark:bg-gray-500 text-gray-600 dark:text-gray-300">
           <tr>
@@ -77,7 +77,9 @@ function search(term) {
               <td class="px-4 py-2 text-right space-x-1">
                 <DownloadButton
                   v-if="can.download"
-                  :href="route('media.download', { type: 'book', id: book.uuid })"
+                  type="book"
+                  :id="book.uuid"
+                  :title="book.media?.title ?? ''"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
                         <path d="M8.75 2.75a.75.75 0 0 0-1.5 0v5.69L5.03 6.22a.75.75 0 0 0-1.06 1.06l3.5 3.5a.75.75 0 0 0 1.06 0l3.5-3.5a.75.75 0 0 0-1.06-1.06L8.75 8.44V2.75Z" />

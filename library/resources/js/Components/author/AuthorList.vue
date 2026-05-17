@@ -49,7 +49,7 @@ function search(term) {
       @search="search"
     />
 
-    <div class="bg-white shadow rounded overflow-hidden">
+    <div class="bg-white opacity-95 shadow rounded overflow-hidden">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="text-xs font-semibold uppercase bg-gray-50 dark:bg-gray-500 text-gray-600 dark:text-gray-300">
           <tr>

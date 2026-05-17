@@ -8,17 +8,13 @@ import AuthorForm from '@/Components/author/AuthorForm.vue';
 import Modal from '@/Components/Modal.vue';
 import ConfirmModal from '@/Components/shared/ConfirmModal.vue';
 import { useToasts } from '@/composables/useToasts.js';
+import { trackJob } from '@/composables/useJobTracker.js';
 
 /**
- * Authors index page — mirror image of Pages/Books/Index.vue.
- *
- *   - "+ New author"  → AuthorForm in a modal → POST /api/authors
- *   - "Edit"          → AuthorForm in a modal → PUT  /api/authors/{author}
- *   - "Delete"        → ConfirmModal          → DELETE /api/authors/{author}
- *
- * Feedback for every API call is delivered through the global toast queue
- * (see useToasts + the Toaster mounted in AuthenticatedLayout). The form
- * still shows 422 field errors inline.
+ * Authors index page — mirror image of Pages/Books/Index.vue. Mutations are
+ * queued: validation runs synchronously (FormRequest), then the controller
+ * dispatches a job and returns 202. The page closes its modal immediately
+ * and uses the loading toast to surface the queued job's eventual outcome.
  */
 defineProps({
   authors: Object,
@@ -58,26 +54,43 @@ async function submitForm(payload) {
   formProcessing.value = true;
   formErrors.value = {};
   const isEdit = formMode.value === 'edit';
+  const name = payload?.name ?? formTarget.value?.name ?? 'author';
 
+  let response;
   try {
     if (isEdit) {
-      await axios.put(route('api.authors.update', { author: formTarget.value.id }), payload);
+      response = await axios.put(
+        route('api.authors.update', { author: formTarget.value.id }),
+        payload,
+      );
     } else {
-      await axios.post(route('api.authors.store'), payload);
+      response = await axios.post(route('api.authors.store'), payload);
     }
-    formMode.value = null;
-    formTarget.value = null;
-    refreshList();
-    toast.success(isEdit ? 'Author updated.' : 'Author added.');
   } catch (e) {
     if (e?.response?.status === 422) {
       formErrors.value = flattenLaravelErrors(e.response.data?.errors ?? {});
     } else {
-      toast.error(e?.response?.data?.message ?? 'Failed to save author. Please try again.');
+      toast.error(e?.response?.data?.message ?? 'Failed to queue author save. Please try again.');
     }
-  } finally {
     formProcessing.value = false;
+    return;
   }
+
+  formMode.value = null;
+  formTarget.value = null;
+  formProcessing.value = false;
+
+  const job = response.data?.job;
+  if (!job) {
+    refreshList();
+    return;
+  }
+
+  awaitJob(job, {
+    pending: isEdit ? `Updating "${name}"…` : `Saving "${name}"…`,
+    success: isEdit ? `"${name}" updated.` : `"${name}" added.`,
+    fallbackError: isEdit ? 'Failed to update author.' : 'Failed to save author.',
+  }).finally(refreshList);
 }
 
 // --- Delete confirmation modal state --------------------------------------
@@ -97,19 +110,48 @@ async function confirmDelete() {
   if (!deleteTarget.value) return;
   deleteBusy.value = true;
   const name = deleteTarget.value.name ?? 'Author';
+
+  let response;
   try {
-    await axios.delete(route('api.authors.destroy', { author: deleteTarget.value.id }));
-    deleteTarget.value = null;
-    refreshList();
-    toast.success(`"${name}" was deleted.`);
+    response = await axios.delete(
+      route('api.authors.destroy', { author: deleteTarget.value.id }),
+    );
   } catch (e) {
-    // 409 = AuthorHasBooks — surface the server message via toast so the
-    // user understands why the delete was refused. Close the modal either
-    // way; the message is preserved in the toast queue.
+    // The "has books" precondition is enforced inside the job; if the
+    // controller itself fails synchronously something deeper went wrong.
+    toast.error(e?.response?.data?.message ?? 'Failed to queue delete.');
     deleteTarget.value = null;
-    toast.error(e?.response?.data?.message ?? 'Failed to delete author.');
-  } finally {
     deleteBusy.value = false;
+    return;
+  }
+
+  deleteTarget.value = null;
+  deleteBusy.value = false;
+
+  const job = response.data?.job;
+  if (!job) {
+    refreshList();
+    return;
+  }
+
+  awaitJob(job, {
+    pending: `Deleting "${name}"…`,
+    success: `"${name}" was deleted.`,
+    fallbackError: 'Failed to delete author.',
+  }).finally(refreshList);
+}
+
+async function awaitJob(job, { pending, success, fallbackError }) {
+  const t = toast.loading(pending);
+  try {
+    const finalJob = await trackJob(job);
+    if (finalJob.status === 'completed') {
+      t.resolve('success', { message: success });
+    } else {
+      t.resolve('error', { message: finalJob.message ?? fallbackError });
+    }
+  } catch (e) {
+    t.resolve('error', { message: e?.message ?? fallbackError });
   }
 }
 

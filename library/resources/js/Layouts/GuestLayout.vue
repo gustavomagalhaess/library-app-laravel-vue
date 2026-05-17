@@ -18,7 +18,7 @@ import { Link } from '@inertiajs/vue3';
 </template>
 <style scoped>
 .background-image {
-    background-image: url('/images/library-bg-3.jpg');
+    background-image: url('/assets/images/library-bg.jpg');
     background-size: cover;
     background-position: center;
 }

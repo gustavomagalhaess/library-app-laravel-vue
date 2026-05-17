@@ -17,10 +17,21 @@ const toast = useToasts();
 
 const user = computed(() => page.props.auth?.user ?? null);
 const permissions = computed(() => page.props.auth?.permissions ?? []);
+const roles = computed(() => page.props.auth?.roles ?? []);
 
 const can = (perm) => Array.isArray(permissions.value)
   ? permissions.value.includes(perm)
   : !!permissions.value?.includes?.(perm);
+
+// Role check — mirrors the Spatie role names seeded in
+// RolesAndPermissionsSeeder (admin, librarian, reader). Used to hide the
+// developer-only Telescope / Horizon links from non-admins. The backend
+// Gate (viewTelescope / viewHorizon in their respective ServiceProviders)
+// is what actually enforces access; this just prevents the link from
+// rendering for users who can't open it anyway.
+const hasRole = (name) => Array.isArray(roles.value)
+  ? roles.value.includes(name)
+  : !!roles.value?.includes?.(name);
 
 // Fortify flashes machine-readable status slugs (e.g. 'password-updated').
 // Translate the ones we surface to humans here so the toast doesn't read like
@@ -85,6 +96,26 @@ function logout() {
           </div>
 
           <div class="hidden sm:flex sm:items-center gap-4">
+            <!-- Telescope + Horizon are NOT Inertia pages — they're standalone
+                 Laravel UIs mounted at /telescope and /horizon. Wrapping them
+                 in <Link> makes Inertia intercept the click and try to render
+                 the response as an Inertia page (which it isn't), which also
+                 swallows target="_blank". Use plain <a> tags so the browser
+                 handles the navigation natively. -->
+            <a
+              v-if="user && hasRole('admin')"
+              href="/telescope"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm text-gray-600 hover:text-indigo-600 dark:text-white/50 dark:hover:text-indigo-400"
+            >Telescope</a>
+            <a
+              v-if="user && hasRole('admin')"
+              href="/horizon"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm text-gray-600 hover:text-indigo-600 dark:text-white/50 dark:hover:text-indigo-400"
+            >Horizon</a>
             <Link
               v-if="user"
               :href="route('profile.edit')"
@@ -112,6 +143,8 @@ function logout() {
           <Link :href="route('dashboard')" class="block py-2 text-sm text-gray-700">Dashboard</Link>
           <Link v-if="can('books.view')" :href="route('media.index', { type: 'book' })" class="block py-2 text-sm text-gray-700">Books</Link>
           <Link v-if="can('authors.view')" :href="route('authors.index')" class="block py-2 text-sm text-gray-700">Authors</Link>
+          <a v-if="user && hasRole('admin')" href="/telescope" target="_blank" rel="noopener noreferrer" class="block py-2 text-sm text-gray-700">Telescope</a>
+          <a v-if="user && hasRole('admin')" href="/horizon" target="_blank" rel="noopener noreferrer" class="block py-2 text-sm text-gray-700">Horizon</a>
           <Link v-if="user" :href="route('profile.edit')" class="block py-2 text-sm text-gray-700">Profile</Link>
           <button type="button" class="block py-2 text-sm text-red-600" @click="logout">Log out</button>
         </div>
@@ -136,7 +169,7 @@ function logout() {
 </template>
 <style scoped>
 .background-image {
-    background-image: url('/images/library-bg-2.jpg');
+    background-image: url('/assets/images/library-bg-2.jpg');
     background-size: cover;
     background-position: center;
 }

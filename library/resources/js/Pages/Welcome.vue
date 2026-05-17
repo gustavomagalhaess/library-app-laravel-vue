@@ -88,7 +88,7 @@ function handleImageError() {
                         <Link
                             v-if="$page.props.auth.user"
                             :href="route('dashboard')"
-                            class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                            class="rounded-md px-3 py-2 text-white ring-1 ring-transparent transition hover:text-gray-100 focus:outline-none focus-visible:ring-[#FF2D20]"
                         >
                             Dashboard
                         </Link>
@@ -96,7 +96,7 @@ function handleImageError() {
                         <template v-else>
                             <Link
                                 :href="route('login')"
-                                class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                                class="rounded-md px-3 py-2 text-white ring-1 ring-transparent transition hover:text-gray-100 focus:outline-none focus-visible:ring-[#FF2D20]"
                             >
                                 Log in
                             </Link>
@@ -104,7 +104,7 @@ function handleImageError() {
                             <Link
                                 v-if="canRegister"
                                 :href="route('register')"
-                                class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                                class="rounded-md px-3 py-2 text-white ring-1 ring-transparent transition hover:text-gray-100 focus:outline-none focus-visible:ring-[#FF2D20]"
                             >
                                 Register
                             </Link>
@@ -152,7 +152,7 @@ function handleImageError() {
                 </main>
 
                 <footer
-                    class="py-16 text-center text-sm text-black dark:text-white/70"
+                    class="py-16 text-center text-sm text-white"
                 >
                     Laravel v{{ laravelVersion }} (PHP v{{ phpVersion }})
                 </footer>
@@ -162,7 +162,7 @@ function handleImageError() {
 </template>
 <style scoped>
     .background-image {
-        background-image: url('/images/library-bg.jpg');
+        background-image: url('/assets/images/library-bg-3.jpg');
         background-size: cover;
         background-position: center;
     }
