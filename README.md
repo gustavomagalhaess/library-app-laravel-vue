@@ -134,6 +134,31 @@ The front controller validates the shared columns and selects the right Domain s
 - Indexed columns on `media.title`, `media.mediable_type`, and `authors.name`.
 - Author auto-complete uses a dedicated lightweight endpoint (`/authors/search`) with a 250 ms debounce.
 
+**Queued writes and downloads.**
+
+Every mutation and every download goes through Redis-backed Laravel jobs so the HTTP turnaround stays fast and predictable, even under load. Validation and authorization remain synchronous in the controller; only the work is queued.
+
+```
+HTTP request: POST /api/book/...
+    ↓
+StoreMediaRequest          ── validates + authorizes (synchronous)
+    ↓
+MediaController            ── stores upload, creates TrackedJob row,
+                              dispatches PersistMediaJob, returns
+                              202 + { job: { id, status, … } }
+    ↓
+[Horizon worker on Redis]
+    ↓
+PersistMediaJob            ── runs domain service inside the worker
+                              and updates TrackedJob.status to
+                              completed/failed with the result
+    ↓
+SPA polls GET /api/jobs/{id} every ~1s with exponential ramp,
+shows a persistent "Saving…" toast until the job is terminal.
+```
+
+The same shape covers create/update/delete for Media and Authors, plus a `PrepareMediaDownloadJob` that issues a short-lived signed URL — the UI shows a "Preparing download…" toast that resolves into a "Download now" link when the job completes. Job classes live under `app/Domain/Jobs/Jobs/`; the lifecycle bookkeeping is centralised in the `TracksProgress` trait. The worker runs in its own container (`library-worker`) via `php artisan horizon` against the `media`, `downloads`, `authors` and `default` queues.
+
 ## Running tests
 
 ```bash
