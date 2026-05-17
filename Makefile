@@ -22,11 +22,19 @@ install: build ## Bootstrap the Laravel application (composer create-project + d
 
 .PHONY: up
 up: ## Start the application stack in the background.
-	$(DC) up -d app web db redis
+	$(DC) up -d app web db redis worker
 
 .PHONY: dev
 dev: ## Start the stack with the Vite dev server (foreground for the node container).
-	$(DC) --profile dev up app web db redis node
+	$(DC) --profile dev up app web db redis worker node
+
+.PHONY: horizon
+horizon: ## Tail the Horizon worker logs.
+	$(DC) logs -f worker
+
+.PHONY: horizon-restart
+horizon-restart: ## Tell Horizon to gracefully restart its workers (picks up code changes).
+	$(DC) exec app php artisan horizon:terminate
 
 .PHONY: down
 down: ## Stop and remove containers (preserves volumes).
