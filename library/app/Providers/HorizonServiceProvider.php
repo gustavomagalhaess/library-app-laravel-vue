@@ -16,17 +16,6 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     {
         parent::boot();
 
-        // IMPORTANT — Horizon's default auth callback is
-        // `app()->environment('local')`, which means the `viewHorizon` gate
-        // below is *bypassed entirely* in dev and ANY user (even anonymous)
-        // can reach /horizon. Replace the callback so the gate fires in
-        // every environment: only authenticated users whose role passes
-        // `viewHorizon` get in.
-        Horizon::auth(
-            fn ($request) => $request->user() !== null
-                && Gate::check('viewHorizon', [$request->user()]),
-        );
-
         // Horizon::routeSmsNotificationsTo('15556667777');
         // Horizon::routeMailNotificationsTo('example@example.com');
         // Horizon::routeSlackNotificationsTo('slack-webhook-url', '#channel');

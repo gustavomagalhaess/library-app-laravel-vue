@@ -62,25 +62,4 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
             fn(User $user) => $user->roles()->where('name', 'admin')->exists()
         );
     }
-
-    /**
-     * Override the parent's `authorization()` so the role gate runs in every
-     * environment.
-     *
-     * The default Telescope::auth() callback short-circuits to "allowed"
-     * whenever APP_ENV=local — `return app()->environment('local') ||
-     * Gate::check('viewTelescope', [$request->user()])`. That means any
-     * authenticated (or even unauthenticated) user can reach /telescope in
-     * dev, bypassing the role check entirely. This override drops the
-     * environment shortcut and requires the gate to pass everywhere.
-     */
-    protected function authorization(): void
-    {
-        $this->gate();
-
-        Telescope::auth(
-            fn ($request) => $request->user() !== null
-                && Gate::check('viewTelescope', [$request->user()]),
-        );
-    }
 }
