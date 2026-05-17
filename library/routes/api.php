@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AuthorController;
+use App\Http\Controllers\JobsController;
 use App\Http\Controllers\MediaController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,9 +12,9 @@ use Illuminate\Support\Facades\Route;
 | API Routes
 |--------------------------------------------------------------------------
 |
-| REST endpoints called by the SPA for mutations (create / update / delete).
-| Reads continue to live in routes/web.php — the index pages are still
-| rendered by Inertia, and search/download are still web routes.
+| REST endpoints called by the SPA for mutations (create / update / delete
+| / download) — all of which are now queued and return 202 + a TrackedJob
+| descriptor. Reads continue to live in routes/web.php (Inertia + search).
 |
 | Authentication is via the Sanctum stateful guard (see bootstrap/app.php),
 | so the SPA reuses the same session cookie it already has from the
@@ -52,6 +53,12 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function (): void {
             Route::delete('{id}', [MediaController::class, 'destroy'])
                 ->middleware('can:media.delete,type')
                 ->name('api.media.destroy');
+
+            // Queued download preparation. The SPA polls /api/jobs/{id} and
+            // follows result.url once the job resolves to a signed URL.
+            Route::post('{id}/download', [MediaController::class, 'requestDownload'])
+                ->middleware('can:media.download,type')
+                ->name('api.media.download.request');
         });
 
     /*
@@ -70,4 +77,12 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function (): void {
     Route::delete('authors/{author}', [AuthorController::class, 'destroy'])
         ->middleware('can:authors.delete')
         ->name('api.authors.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Job tracking (polled by the SPA to reconcile optimistic UI)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('jobs/{uuid}', [JobsController::class, 'show'])
+        ->name('api.jobs.show');
 });

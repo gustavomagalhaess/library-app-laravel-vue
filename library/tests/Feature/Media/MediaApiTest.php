@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Media;
 
 use App\Domain\Author\Models\Author;
+use App\Domain\Jobs\Models\TrackedJob;
 use App\Domain\Media\MediaTypeRegistry;
 use App\Models\User;
 use Database\Factories\BookFactory;
@@ -12,6 +13,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 
 /**
@@ -20,17 +22,13 @@ use Tests\TestCase;
  *
  * Every test below is data-provided by {@see mediaTypeProvider()}, so the
  * same assertions run against every registered media subtype. Adding a new
- * type — say, 'movie' — is a one-line change in the provider:
+ * type — say, 'movie' — is a one-line change in the provider.
  *
- *     'movie' => [[
- *         'type'            => 'movie',
- *         'factory'         => fn () => MovieFactory::new()->create(),
- *         'subtype'         => ['duration' => 120],
- *         'subtype_updated' => ['duration' => 90],
- *     ]],
- *
- * The provider returns closures (not pre-built models) so the factory call
- * happens *inside* the test transaction — required for RefreshDatabase.
+ * Since every mutation now goes through the queued pipeline, controller
+ * responses are 202 + a TrackedJob descriptor (not the persisted row). In
+ * the test environment QUEUE_CONNECTION=sync (see phpunit.xml), so the job
+ * has already executed by the time the HTTP call returns — we assert on
+ * the TrackedJob's final `status` and on the underlying DB state.
  */
 class MediaApiTest extends TestCase
 {
@@ -48,12 +46,6 @@ class MediaApiTest extends TestCase
                 'subtype'         => ['pages' => 250],
                 'subtype_updated' => ['pages' => 500],
             ]],
-            // 'movie' => [[
-            //     'type'            => 'movie',
-            //     'factory'         => fn () => MovieFactory::new()->create(),
-            //     'subtype'         => ['duration' => 120],
-            //     'subtype_updated' => ['duration' => 90],
-            // ]],
         ];
     }
 
@@ -79,10 +71,14 @@ class MediaApiTest extends TestCase
 
         $response = $this->postJson("/api/$type", $payload);
 
-        $response->assertCreated()
-            ->assertJsonPath('data.media.title', 'A Wonderful Story')
-            ->assertJsonPath('data.media.publication_year', 2024)
-            ->assertJsonPath('data.media.authors.0.id', $author->id);
+        $response->assertStatus(Response::HTTP_ACCEPTED)
+            ->assertJsonPath('job.type', 'media.create')
+            ->assertJsonStructure(['job' => ['id', 'status', 'type']]);
+
+        // sync queue → job has already executed before the response returned.
+        $job = TrackedJob::where('uuid', $response->json('job.id'))->firstOrFail();
+        $this->assertSame(TrackedJob::STATUS_COMPLETED, $job->status, $job->message ?? '');
+        $this->assertSame('A Wonderful Story', $job->result['record']['media']['title'] ?? null);
 
         // Shared `media` row exists with the right morph alias.
         $this->assertDatabaseHas('media', [
@@ -110,6 +106,10 @@ class MediaApiTest extends TestCase
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['title', 'publication_year', 'file']);
+
+        // Validation runs synchronously in the FormRequest — no job should
+        // be dispatched / TrackedJob row written.
+        $this->assertDatabaseCount('tracked_jobs', 0);
     }
 
     /** @param array<string, mixed> $config */
@@ -137,9 +137,6 @@ class MediaApiTest extends TestCase
     public function test_unauthorized_user_cannot_create_media(array $config): void
     {
         $type = $config['type'];
-        // Reader can `view`/`download` but not `create` — should be 403 from
-        // the route's can:media.create middleware before the request hits the
-        // controller body.
         $this->loginAsRole('reader');
 
         $response = $this->postJson("/api/$type", [
@@ -150,14 +147,13 @@ class MediaApiTest extends TestCase
         ]);
 
         $response->assertForbidden();
+        $this->assertDatabaseCount('tracked_jobs', 0);
     }
 
     /** @param array<string, mixed> $config */
     #[DataProvider('mediaTypeProvider')]
     public function test_guest_cannot_create_media(array $config): void
     {
-        // No actingAs — request is unauthenticated. auth:sanctum on the
-        // route group converts that to a 401 for JSON requests.
         $this->postJson("/api/{$config['type']}", [])
             ->assertUnauthorized();
     }
@@ -186,9 +182,11 @@ class MediaApiTest extends TestCase
 
         $response = $this->postJson("/api/$type/{$record->getKey()}", $payload);
 
-        $response->assertOk()
-            ->assertJsonPath('data.media.title', 'Renamed Title')
-            ->assertJsonPath('data.media.publication_year', 1999);
+        $response->assertStatus(Response::HTTP_ACCEPTED)
+            ->assertJsonPath('job.type', 'media.update');
+
+        $job = TrackedJob::where('uuid', $response->json('job.id'))->firstOrFail();
+        $this->assertSame(TrackedJob::STATUS_COMPLETED, $job->status, $job->message ?? '');
 
         $this->assertDatabaseHas('media', [
             'uuid'             => $record->getKey(),
@@ -219,6 +217,7 @@ class MediaApiTest extends TestCase
         );
 
         $response->assertNotFound();
+        $this->assertDatabaseCount('tracked_jobs', 0);
     }
 
     /** @param array<string, mixed> $config */
@@ -252,7 +251,12 @@ class MediaApiTest extends TestCase
 
         $response = $this->deleteJson("/api/$type/{$record->getKey()}");
 
-        $response->assertNoContent();
+        $response->assertStatus(Response::HTTP_ACCEPTED)
+            ->assertJsonPath('job.type', 'media.delete');
+
+        $job = TrackedJob::where('uuid', $response->json('job.id'))->firstOrFail();
+        $this->assertSame(TrackedJob::STATUS_COMPLETED, $job->status, $job->message ?? '');
+
         $this->assertDatabaseMissing($this->tableFor($type), ['uuid' => $record->getKey()]);
         $this->assertDatabaseMissing('media',                ['uuid' => $record->getKey()]);
     }
@@ -267,7 +271,6 @@ class MediaApiTest extends TestCase
         $this->deleteJson("/api/{$config['type']}/{$record->getKey()}")
             ->assertForbidden();
 
-        // Defence-in-depth: the record must still be there.
         $this->assertDatabaseHas($this->tableFor($config['type']), ['uuid' => $record->getKey()]);
     }
 
@@ -282,6 +285,34 @@ class MediaApiTest extends TestCase
     }
 
     // ---------------------------------------------------------------------
+    // Download (queued)
+    // ---------------------------------------------------------------------
+
+    /** @param array<string, mixed> $config */
+    #[DataProvider('mediaTypeProvider')]
+    public function test_authorized_user_can_request_queued_download(array $config): void
+    {
+        $type = $config['type'];
+        $disk = $this->diskFor($type);
+        Storage::fake($disk);
+        $this->loginAsRole('reader');
+        $record = ($config['factory'])();
+        // Make sure the file exists on the faked disk so PrepareMediaDownloadJob
+        // doesn't bail with "File not available".
+        Storage::disk($disk)->put($record->media->file_path, 'fake-pdf-bytes');
+
+        $response = $this->postJson("/api/$type/{$record->getKey()}/download");
+
+        $response->assertStatus(Response::HTTP_ACCEPTED)
+            ->assertJsonPath('job.type', 'media.download.prepare');
+
+        $job = TrackedJob::where('uuid', $response->json('job.id'))->firstOrFail();
+        $this->assertSame(TrackedJob::STATUS_COMPLETED, $job->status, $job->message ?? '');
+        $this->assertNotEmpty($job->result['url'] ?? null);
+        $this->assertStringContainsString('signature=', $job->result['url']);
+    }
+
+    // ---------------------------------------------------------------------
     // Cross-cutting (no data provider — single request)
     // ---------------------------------------------------------------------
 
@@ -289,8 +320,6 @@ class MediaApiTest extends TestCase
     {
         $this->loginAsRole('admin');
 
-        // The route's whereIn(config('media.types')) constraint rejects
-        // unknown types before they ever reach MediaController.
         $this->postJson('/api/widget', [])
             ->assertNotFound();
     }
@@ -299,18 +328,6 @@ class MediaApiTest extends TestCase
     // Helpers
     // ---------------------------------------------------------------------
 
-    /**
-     * Authenticate the test against the Sanctum guard with the given role.
-     * The role names line up with RolesAndPermissionsSeeder, which the
-     * TestCase base class seeds before every test.
-     *
-     * We use Laravel's built-in actingAs($user, 'sanctum') rather than
-     * Sanctum::actingAs($user) because the latter calls
-     * `$user->withAccessToken(...)`, which requires the HasApiTokens trait.
-     * Our API is session-only (Sanctum stateful) — there are no personal
-     * access tokens in production, so we deliberately don't pull that trait
-     * onto the User model.
-     */
     private function loginAsRole(string $role): User
     {
         $user = User::factory()->create();

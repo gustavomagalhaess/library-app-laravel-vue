@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 
 final class EloquentAuthorRepository implements AuthorRepositoryInterface
 {
-    public function paginate(?string $query, int $perPage = 10): LengthAwarePaginator
+    public function paginate(?string $query, int $perPage = 15): LengthAwarePaginator
     {
         return Author::query()
             ->withCount('books')
@@ -26,7 +26,7 @@ final class EloquentAuthorRepository implements AuthorRepositoryInterface
         return Author::withCount('books')->find($id);
     }
 
-    public function searchByName(string $query, int $limit = 10): Collection
+    public function searchByName(string $query, int $limit = 15): Collection
     {
         return Author::query()
             ->where('name', 'like', '%'.$query.'%')

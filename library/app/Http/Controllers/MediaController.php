@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Domain\Jobs\Services\JobDispatcher;
 use App\Domain\Media\Exceptions\MediaException;
 use App\Domain\Media\Messages\MediaMessage;
 use App\Domain\Media\Services\MediaService;
@@ -20,24 +21,27 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * Front controller for every media type the application supports.
  *
- * Every action takes the `{type}` URL segment and forwards it to the unified
- * {@see MediaService}. There is no per-type dispatch (no `BookService`) — adding
- * a media type only means adding a Model + migration + a line in config/media.php.
+ * Mutations are now queued — the controller's job is to authorise + validate
+ * + persist the uploaded file (UploadedFile is not queue-serialisable), then
+ * dispatch a job and return 202 with a TrackedJob descriptor. The SPA polls
+ * `/api/jobs/{id}` to learn when the row is real.
  *
  * Reads (Inertia, declared in routes/web.php):
  *   GET  /{type}                  → list
  *   GET  /{type}/search           → JSON search
- *   GET  /{type}/{id}/download    → file download
+ *   GET  /{type}/{id}/download    → file download (sync; legacy fallback)
  *
  * Mutations (JSON, declared in routes/api.php):
- *   POST   /api/{type}            → store
- *   POST   /api/{type}/{id}       → update (POST because file uploads can't ride PUT)
- *   DELETE /api/{type}/{id}       → destroy
+ *   POST   /api/{type}            → queue store        → 202 + TrackedJob
+ *   POST   /api/{type}/{id}       → queue update       → 202 + TrackedJob
+ *   DELETE /api/{type}/{id}       → queue destroy      → 202 + TrackedJob
+ *   POST   /api/{type}/{id}/download → queue prepare   → 202 + TrackedJob
  */
 class MediaController extends Controller
 {
     public function __construct(
         private readonly MediaService $mediaService,
+        private readonly JobDispatcher $jobDispatcher,
     ) {}
 
     public function index(Request $request, string $type): InertiaResponse
@@ -78,24 +82,27 @@ class MediaController extends Controller
     public function store(StoreMediaRequest $request, string $type): JsonResponse
     {
         try {
-            // The shared fields (title/publication_year/file) come from the
-            // FormRequest; subtype-specific fields are pulled out by name and
-            // validated inside the service against the rules declared on the
-            // subtype model.
-            $record = $this->mediaService->create(
+            $attributes = array_merge(
+                $request->safe()->only(['title', 'publication_year']),
+                $request->only($this->mediaService->typeSpecificFields($type)),
+            );
+
+            // The upload is small + local, so storing it synchronously here
+            // is fine and keeps UploadedFile out of the Redis payload.
+            $storedPath = $this->mediaService->storeFile($type, $request->file('file'));
+
+            $job = $this->jobDispatcher->dispatchMediaCreate(
+                user: $request->user(),
                 type: $type,
-                attributes: array_merge(
-                    $request->safe()->only(['title', 'publication_year']),
-                    $request->only($this->mediaService->typeSpecificFields($type)),
-                ),
+                attributes: $attributes,
                 authorsInput: [
                     'ids' => $request->input('authors.ids', []),
                     'new' => $request->input('authors.new', []),
                 ],
-                file: $request->file('file'),
+                storedFilePath: $storedPath,
             );
 
-            return response()->json(['data' => $record], Response::HTTP_CREATED);
+            return response()->json(['job' => $job->toPublicArray()], Response::HTTP_ACCEPTED);
         } catch (MediaException $e) {
             return response()->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Throwable $e) {
@@ -119,23 +126,28 @@ class MediaController extends Controller
                 return response()->json(['message' => 'Not found.'], Response::HTTP_NOT_FOUND);
             }
 
-            $updated = $this->mediaService->update(
+            $attributes = array_merge(
+                $request->safe()->only(['title', 'publication_year']),
+                $request->only($this->mediaService->typeSpecificFields($type)),
+            );
+
+            $storedPath = $request->hasFile('file')
+                ? $this->mediaService->storeFile($type, $request->file('file'))
+                : null;
+
+            $job = $this->jobDispatcher->dispatchMediaUpdate(
+                user: $request->user(),
                 type: $type,
-                record: $record,
-                attributes: array_merge(
-                    $request->safe()->only(['title', 'publication_year']),
-                    $request->only($this->mediaService->typeSpecificFields($type)),
-                ),
+                recordUuid: $id,
+                attributes: $attributes,
                 authorsInput: [
                     'ids' => $request->input('authors.ids', []),
                     'new' => $request->input('authors.new', []),
                 ],
-                file: $request->file('file'),
+                storedFilePath: $storedPath,
             );
 
-            return response()->json(['data' => $updated]);
-        } catch (MediaException $e) {
-            return response()->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+            return response()->json(['job' => $job->toPublicArray()], Response::HTTP_ACCEPTED);
         } catch (\Throwable $e) {
             app('log')->error(
                 sprintf(MediaMessage::FAILED_TO_PERSIST_MEDIA_LOG, 'update', $type, $e->getMessage()),
@@ -149,7 +161,7 @@ class MediaController extends Controller
         }
     }
 
-    public function destroy(string $type, string $id): JsonResponse
+    public function destroy(Request $request, string $type, string $id): JsonResponse
     {
         try {
             $record = $this->mediaService->find($type, $id);
@@ -157,9 +169,13 @@ class MediaController extends Controller
                 return response()->json(['message' => 'Not found.'], Response::HTTP_NOT_FOUND);
             }
 
-            $this->mediaService->delete($type, $record);
+            $job = $this->jobDispatcher->dispatchMediaDelete(
+                user: $request->user(),
+                type: $type,
+                recordUuid: $id,
+            );
 
-            return response()->json(null, Response::HTTP_NO_CONTENT);
+            return response()->json(['job' => $job->toPublicArray()], Response::HTTP_ACCEPTED);
         } catch (MediaException $e) {
             return response()->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Throwable $e) {
@@ -175,6 +191,11 @@ class MediaController extends Controller
         }
     }
 
+    /**
+     * Sync download (kept for direct-link compatibility and as a fallback in
+     * case the queued worker is unavailable). The SPA prefers the
+     * `requestDownload()` API endpoint below.
+     */
     public function download(string $type, string $id): StreamedResponse
     {
         try {
@@ -184,6 +205,36 @@ class MediaController extends Controller
         } catch (\Throwable $e) {
             app('log')->error($e->getMessage(), ['exception' => $e]);
             abort(404, MediaMessage::ERROR);
+        }
+    }
+
+    /**
+     * Queue a prepared download. Returns 202 + TrackedJob; once the SPA's
+     * polling resolves, it follows `result.url` to actually fetch the file.
+     */
+    public function requestDownload(Request $request, string $type, string $id): JsonResponse
+    {
+        try {
+            $record = $this->mediaService->find($type, $id);
+            if ($record === null) {
+                return response()->json(['message' => 'Not found.'], Response::HTTP_NOT_FOUND);
+            }
+
+            $job = $this->jobDispatcher->dispatchMediaDownload(
+                user: $request->user(),
+                type: $type,
+                recordUuid: $id,
+            );
+
+            return response()->json(['job' => $job->toPublicArray()], Response::HTTP_ACCEPTED);
+        } catch (MediaException $e) {
+            return response()->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Throwable $e) {
+            app('log')->error($e->getMessage(), ['exception' => $e]);
+            return response()->json(
+                ['message' => MediaMessage::ERROR],
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+            );
         }
     }
 }

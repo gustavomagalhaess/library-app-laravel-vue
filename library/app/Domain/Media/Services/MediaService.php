@@ -107,7 +107,7 @@ final readonly class MediaService
     /**
      * @return LengthAwarePaginator<Model>
      */
-    public function list(string $type, ?string $query = null, int $perPage = 10): LengthAwarePaginator
+    public function list(string $type, ?string $query = null, int $perPage = 15): LengthAwarePaginator
     {
         return $this->mediaRepository->paginate($type, $query, $perPage);
     }
@@ -123,9 +123,33 @@ final readonly class MediaService
      */
     public function create(string $type, array $attributes, array $authorsInput, UploadedFile $file): Model
     {
+        $path = $this->storeFile($type, $file);
+
+        return $this->createFromStoredFile(
+            type: $type,
+            attributes: $attributes,
+            authorsInput: $authorsInput,
+            storedFilePath: $path,
+        );
+    }
+
+    /**
+     * Variant of create() used by the queued PersistMediaJob: the file has
+     * already been written to the type's disk by the controller (synchronously,
+     * because UploadedFile instances aren't queue-serializable), so we receive
+     * the resolved disk path instead. Behavior is otherwise identical.
+     *
+     * @param  array<string, mixed>             $attributes
+     * @param  array{ids?:int[], new?:string[]} $authorsInput
+     */
+    public function createFromStoredFile(
+        string $type,
+        array $attributes,
+        array $authorsInput,
+        string $storedFilePath,
+    ): Model {
         $subtypeAttributes = $this->validateSubtypeFields($type, $attributes);
         $authorIds = $this->resolveAuthorIds($authorsInput);
-        $path = $this->storeFile($type, $file);
 
         return $this->mediaRepository->create(
             type: $type,
@@ -133,7 +157,7 @@ final readonly class MediaService
             mediaAttributes: [
                 'title'            => $attributes['title'],
                 'publication_year' => $attributes['publication_year'],
-                'file_path'        => $path,
+                'file_path'        => $storedFilePath,
             ],
             authorIds: $authorIds,
         );
@@ -150,6 +174,32 @@ final readonly class MediaService
         ?array $authorsInput,
         ?UploadedFile $file,
     ): Model {
+        $newPath = $file instanceof UploadedFile ? $this->storeFile($type, $file) : null;
+
+        return $this->updateFromStoredFile(
+            type: $type,
+            record: $record,
+            attributes: $attributes,
+            authorsInput: $authorsInput,
+            storedFilePath: $newPath,
+        );
+    }
+
+    /**
+     * Queue-friendly variant of update(). The controller has already moved
+     * the uploaded file to its final disk location (or passed null to indicate
+     * "no file change"), so we receive a string path instead of an UploadedFile.
+     *
+     * @param  array<string, mixed>                  $attributes
+     * @param  array{ids?:int[], new?:string[]}|null $authorsInput
+     */
+    public function updateFromStoredFile(
+        string $type,
+        Model $record,
+        array $attributes,
+        ?array $authorsInput,
+        ?string $storedFilePath,
+    ): Model {
         $subtypeAttributes = $this->validateSubtypeFields($type, $attributes);
 
         $mediaAttributes = array_filter(
@@ -160,14 +210,13 @@ final readonly class MediaService
             static fn ($v) => $v !== null,
         );
 
-        if ($file instanceof UploadedFile) {
-            $newPath = $this->storeFile($type, $file);
+        if ($storedFilePath !== null) {
             $disk = $this->registry->for($type)->disk;
             $previous = $record->media?->file_path;
             if ($previous && Storage::disk($disk)->exists($previous)) {
                 Storage::disk($disk)->delete($previous);
             }
-            $mediaAttributes['file_path'] = $newPath;
+            $mediaAttributes['file_path'] = $storedFilePath;
         }
 
         $authorIds = $authorsInput !== null ? $this->resolveAuthorIds($authorsInput) : null;
@@ -189,6 +238,9 @@ final readonly class MediaService
     // Download (streams the stored PDF — used by GET /{type}/{id}/download)
     // ---------------------------------------------------------------------
 
+    /**
+     * @throws MediaException
+     */
     public function download(string $type, string $id): StreamedResponse
     {
         $record = $this->find($type, $id);
@@ -196,8 +248,8 @@ final readonly class MediaService
 
         $disk = $this->registry->for($type)->disk;
         $path = $record->media?->file_path;
-        if (!$path || !Storage::disk($disk)->exists($path)) {
-            abort(404, 'File not available.');
+        if (! $path || ! Storage::disk($disk)->exists($path)) {
+            throw new MediaException('File not available.', 404);
         }
 
         $filename = sprintf(
@@ -261,7 +313,12 @@ final readonly class MediaService
         return array_values(array_unique($ids));
     }
 
-    private function storeFile(string $type, UploadedFile $file): string
+    /**
+     * Persist an upload to the type's disk and return the resolved path.
+     * Public because the controller calls this synchronously before queuing
+     * the persistence job — UploadedFile instances can't ride a Redis payload.
+     */
+    public function storeFile(string $type, UploadedFile $file): string
     {
         $disk = $this->registry->for($type)->disk;
 

@@ -37,7 +37,7 @@ final readonly class EloquentMediaRepository implements MediaRepositoryInterface
         return $modelClass::query()->count();
     }
 
-    public function paginate(string $type, ?string $query, int $perPage = 10): LengthAwarePaginator
+    public function paginate(string $type, ?string $query, int $perPage = 15): LengthAwarePaginator
     {
         $definition = $this->registry->for($type);
         $modelClass = $definition->modelClass;

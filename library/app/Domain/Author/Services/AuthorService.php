@@ -19,7 +19,7 @@ final readonly class AuthorService
     /**
      * @return LengthAwarePaginator<Author>
      */
-    public function list(?string $query = null, int $perPage = 10): LengthAwarePaginator
+    public function list(?string $query = null, int $perPage = 15): LengthAwarePaginator
     {
         return $this->authorRepository->paginate($query, $perPage);
     }
@@ -32,7 +32,7 @@ final readonly class AuthorService
     /**
      * @return Collection<int, Author>
      */
-    public function search(string $query, int $limit = 10): Collection
+    public function search(string $query, int $limit = 15): Collection
     {
         return $this->authorRepository->searchByName($query, $limit);
     }

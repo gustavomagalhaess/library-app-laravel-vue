@@ -5,4 +5,6 @@ return [
     App\Providers\AuthServiceProvider::class,
     App\Providers\DomainServiceProvider::class,
     App\Providers\FortifyServiceProvider::class,
+    App\Providers\HorizonServiceProvider::class,
+    App\Providers\TelescopeServiceProvider::class,
 ];

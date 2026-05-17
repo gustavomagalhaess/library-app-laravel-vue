@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Domain\Author\Exceptions\AuthorHasBooksException;
 use App\Domain\Author\Models\Author;
 use App\Domain\Author\Services\AuthorService;
+use App\Domain\Jobs\Services\JobDispatcher;
 use App\Http\Requests\Author\StoreAuthorRequest;
 use App\Http\Requests\Author\UpdateAuthorRequest;
 use Illuminate\Http\JsonResponse;
@@ -16,19 +16,22 @@ use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 
 /**
+ * Reads stay synchronous; writes are queued.
+ *
  * Reads (Inertia, declared in routes/web.php):
  *   GET /authors          → list
  *   GET /authors/search   → JSON search (used by the BookForm typeahead)
  *
- * Mutations (JSON, declared in routes/api.php):
- *   POST   /api/authors            → store
- *   PUT    /api/authors/{author}   → update
- *   DELETE /api/authors/{author}   → destroy
+ * Mutations (queued; declared in routes/api.php):
+ *   POST   /api/authors            → store    → 202 + TrackedJob
+ *   PUT    /api/authors/{author}   → update   → 202 + TrackedJob
+ *   DELETE /api/authors/{author}   → destroy  → 202 + TrackedJob
  */
 class AuthorController extends Controller
 {
     public function __construct(
         private readonly AuthorService $authorService,
+        private readonly JobDispatcher $jobDispatcher,
     ) {}
 
     public function index(Request $request): InertiaResponse
@@ -61,14 +64,17 @@ class AuthorController extends Controller
     public function store(StoreAuthorRequest $request): JsonResponse
     {
         try {
-            $author = $this->authorService->create($request->string('name')->trim()->toString());
+            $job = $this->jobDispatcher->dispatchAuthorCreate(
+                user: $request->user(),
+                name: $request->string('name')->trim()->toString(),
+            );
 
-            return response()->json(['data' => $author], Response::HTTP_CREATED);
+            return response()->json(['job' => $job->toPublicArray()], Response::HTTP_ACCEPTED);
         } catch (\Throwable $e) {
-            app('log')->error('Failed to create author: '.$e->getMessage(), ['exception' => $e]);
+            app('log')->error('Failed to queue author create: '.$e->getMessage(), ['exception' => $e]);
 
             return response()->json(
-                ['message' => 'Failed to create author. Please try again.'],
+                ['message' => 'Failed to queue author create. Please try again.'],
                 Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }
@@ -77,34 +83,37 @@ class AuthorController extends Controller
     public function update(UpdateAuthorRequest $request, Author $author): JsonResponse
     {
         try {
-            $updated = $this->authorService->update($author, $request->string('name')->trim()->toString());
+            $job = $this->jobDispatcher->dispatchAuthorUpdate(
+                user: $request->user(),
+                authorId: $author->id,
+                name: $request->string('name')->trim()->toString(),
+            );
 
-            return response()->json(['data' => $updated]);
+            return response()->json(['job' => $job->toPublicArray()], Response::HTTP_ACCEPTED);
         } catch (\Throwable $e) {
-            app('log')->error('Failed to update author: '.$e->getMessage(), ['exception' => $e]);
+            app('log')->error('Failed to queue author update: '.$e->getMessage(), ['exception' => $e]);
 
             return response()->json(
-                ['message' => 'Failed to update author. Please try again.'],
+                ['message' => 'Failed to queue author update. Please try again.'],
                 Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }
     }
 
-    public function destroy(Author $author): JsonResponse
+    public function destroy(Request $request, Author $author): JsonResponse
     {
         try {
-            $this->authorService->delete($author);
+            $job = $this->jobDispatcher->dispatchAuthorDelete(
+                user: $request->user(),
+                authorId: $author->id,
+            );
 
-            return response()->json(null, Response::HTTP_NO_CONTENT);
-        } catch (AuthorHasBooksException $e) {
-            // 409 — the request was valid but the current resource state
-            // (this author is still linked to books) prevents deletion.
-            return response()->json(['message' => $e->getMessage()], Response::HTTP_CONFLICT);
+            return response()->json(['job' => $job->toPublicArray()], Response::HTTP_ACCEPTED);
         } catch (\Throwable $e) {
-            app('log')->error('Failed to delete author: '.$e->getMessage(), ['exception' => $e]);
+            app('log')->error('Failed to queue author delete: '.$e->getMessage(), ['exception' => $e]);
 
             return response()->json(
-                ['message' => 'Failed to delete author. Please try again.'],
+                ['message' => 'Failed to queue author delete. Please try again.'],
                 Response::HTTP_INTERNAL_SERVER_ERROR,
             );
         }

@@ -27,6 +27,40 @@ services:
     networks:
       - library-net
 
+  # Long-running queue worker. Reuses the PHP image so it shares the exact
+  # vendor/, php.ini and extension set the FPM container uses — guarantees
+  # the jobs behave identically to whatever code paths the HTTP request
+  # exercised, because they ARE the same code paths.
+  #
+  # We run `horizon` (already installed) so admins get the Horizon dashboard
+  # at /horizon for free, with auto-balancing across the `media`, `authors`
+  # and `downloads` queues that JobDispatcher targets.
+  worker:
+    build:
+      context: ./docker/php
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+    container_name: library-worker
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./library:/var/www/html
+    environment:
+      # Horizon respawns workers internally when it sees code changes via
+      # the `php artisan queue:restart` signal — no need for nodemon-style
+      # tooling. XDEBUG stays off for the worker by default; flip it on
+      # only if you specifically want to step through job code.
+      XDEBUG_MODE: ${WORKER_XDEBUG_MODE:-off}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: ["php", "artisan", "horizon"]
+    networks:
+      - library-net
+
   web:
     build:
       context: ./docker/nginx

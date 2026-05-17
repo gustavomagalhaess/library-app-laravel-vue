@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Account\DeleteAccountController;
 use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\JobsController;
 use App\Http\Controllers\MediaController;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Application;
@@ -92,6 +93,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('can:authors.view')
         ->name('authors.index');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Signed-URL download endpoint
+|--------------------------------------------------------------------------
+|
+| Reached by the SPA after PrepareMediaDownloadJob resolves with a signed
+| URL. The signature middleware enforces expiry + tamper-resistance, so we
+| don't apply auth/verified middleware here — the URL itself is the
+| capability and it's scoped to a specific TrackedJob.
+*/
+Route::get('jobs/media/{type}/{id}/download/{job}', [JobsController::class, 'download'])
+    ->whereIn('type', array_keys((array) config('media.types', [])))
+    ->middleware('signed')
+    ->name('jobs.media.download');
+
+// Fortify auth routes (login, register, password reset, email verification,
+// profile-information update, password update, password confirmation, 2FA)
+// are registered automatically by Laravel\Fortify\FortifyServiceProvider —
+// no manual require.
 
 // Fortify auth routes (login, register, password reset, email verification,
 // profile-information update, password update, password confirmation, 2FA)
