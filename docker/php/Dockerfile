@@ -41,6 +41,28 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 RUN pecl install redis \
     && docker-php-ext-enable redis
 
+# Browser toolchain for Laravel Dusk.
+#
+# The chromedriver binary that ships with the dusk package is glibc-linked
+# (`/lib64/ld-linux-x86-64.so.2`) — it cannot run on Alpine (musl) at all.
+# We install Alpine's chromium + chromium-chromedriver packages instead;
+# both are musl-built and version-matched, so Dusk no longer fights its
+# bundled binary. The font + nss packages are runtime deps Chromium needs
+# to render and to load TLS certs respectively.
+#
+# CHROME_BIN tells DuskTestCase where to find the browser. The driver
+# binary lives at /usr/lib/chromium/chromedriver but Alpine symlinks it
+# to /usr/bin/chromedriver for convenience — we use the canonical path.
+RUN apk add --no-cache \
+        chromium \
+        chromium-chromedriver \
+        nss \
+        freetype \
+        harfbuzz \
+        ttf-freefont
+ENV CHROME_BIN=/usr/bin/chromium-browser \
+    CHROMEDRIVER_BIN=/usr/bin/chromedriver
+
  # Xdebug (dev only). Enable at runtime by setting XDEBUG_MODE=debug,develop
  # in docker-compose; defaults to "off" so production-style runs aren't slowed.
  RUN pecl install xdebug \

@@ -64,6 +64,30 @@ npm: ## Run an npm command in the app container, e.g. `make npm c="run build"`.
 test: ## Run the test suite inside the container.
 	$(DC) exec app php artisan test
 
+.PHONY: dusk-setup
+dusk-setup: ## Create the `library_dusk` DB AND build Vite assets — required before `make dusk`.
+	# 1. The MySQL init script only runs when the data volume is first
+	#    created, so for an existing dev environment we have to create
+	#    the DB by hand. Idempotent — safe to re-run.
+	$(DC) exec db sh -c "mysql -uroot -p$$(printenv DB_ROOT_PASSWORD 2>/dev/null || echo root) \
+		-e 'CREATE DATABASE IF NOT EXISTS library_dusk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; \
+		    GRANT ALL PRIVILEGES ON library_dusk.* TO \"library\"@\"%\"; FLUSH PRIVILEGES;'"
+	# 2. Dusk renders the real Blade root view, which calls @vite(). Without
+	#    public/build/manifest.json that directive throws — Chromium sees
+	#    a Laravel error page instead of the SPA, and `type('email',…)`
+	#    fails with "no such element". Make sure the build artefacts exist.
+	$(DC) exec app npm run build
+
+.PHONY: dusk
+dusk: ## Run the Dusk browser tests inside the PHP container.
+	# Has to run inside `app` so DUSK_DRIVER_URL=http://localhost:9515
+	# resolves to the chromedriver we install in docker/php/Dockerfile —
+	# from the host it would not be reachable. The .env.dusk.local file
+	# overrides APP_URL to http://web so the browser hits nginx on the
+	# docker-compose network instead of localhost (where nothing listens
+	# inside `app`).
+	$(DC) exec app php artisan dusk $(c)
+
 .PHONY: migrate
 migrate: ## Run database migrations.
 	$(DC) exec app php artisan migrate
