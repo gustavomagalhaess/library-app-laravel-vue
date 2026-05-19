@@ -13,4 +13,4 @@ library/storage/framework/views/*
 library/storage/logs/*
 library/public/build/
 library/public/hot
-
+/CLAUDE.md

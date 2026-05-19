@@ -7,6 +7,7 @@ namespace App\Domain\Media;
 use App\Domain\Media\Contracts\MediaSubtype;
 use App\Domain\Media\Exceptions\MediaException;
 use App\Domain\Media\Messages\MediaMessage;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 /**
@@ -43,10 +44,10 @@ final class MediaTypeRegistry
                 );
             }
 
-            /** @var class-string<MediaSubtype&\Illuminate\Database\Eloquent\Model> $modelClass */
+            /** @var class-string<MediaSubtype&Model> $modelClass */
 
             // The config key is the canonical alias — make sure the model
-            // agrees so the URL segment, the morph map and any code that
+            // agrees so the URL segment, the morph map, and any code that
             // reads `$model::getMorphAlias()` can't drift.
             if ($modelClass::getMorphAlias() !== $type) {
                 throw new \InvalidArgumentException(

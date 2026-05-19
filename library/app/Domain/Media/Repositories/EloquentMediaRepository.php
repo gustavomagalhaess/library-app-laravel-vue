@@ -54,10 +54,10 @@ final readonly class EloquentMediaRepository implements MediaRepositoryInterface
                 $q->join('media', 'media.uuid', '=', $table.'.uuid')
                     ->select($table.'.*')
                     ->where(function (Builder $inner) use ($like): void {
-                        $inner->where('media.title', 'like', $like)
+                        $inner->whereLike('media.title', $like)
                             // Authors are attached to media, so the existence
                             // check goes through the media relation.
-                            ->orWhereHas('media.authors', fn (Builder $a) => $a->where('name', 'like', $like));
+                            ->orWhereHas('media.authors', fn (Builder $a) => $a->whereLike('name', $like));
                     });
             })
             ->orderByDesc($table.'.created_at')
