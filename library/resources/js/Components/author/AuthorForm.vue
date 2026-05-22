@@ -38,6 +38,7 @@ function submit() {
       <InputLabel value="Name"/>
       <TextInput
         v-model="form.name"
+        dusk="author-name"
         class="mt-1 block w-full"
       />
       <InputError :message="errors.name" class="mt-1"/>
@@ -49,6 +50,7 @@ function submit() {
       </DangerButton>
       <SuccessButton
         type="submit"
+        dusk="author-submit"
         :disabled="processing"
       >
           {{ isEdit ? 'Save changes' : 'Add author' }}

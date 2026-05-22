@@ -37,6 +37,7 @@ function search(term) {
       <h2 class="text-xl font-semibold text-gray-800">Books</h2>
       <SuccessButton
         v-if="can.create"
+        dusk="book-new"
         @click="emit('new')"
       >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
@@ -88,6 +89,7 @@ function search(term) {
                 </DownloadButton>
                 <WarningButton
                   v-if="can.update"
+                  :dusk="'book-edit-' + book.uuid"
                   @click="emit('edit', book)"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
@@ -96,6 +98,7 @@ function search(term) {
                 </WarningButton>
                 <DeleteButton
                   v-if="can.delete"
+                  :dusk="'book-delete-' + book.uuid"
                   @confirm="emit('delete', book)"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">

@@ -40,7 +40,7 @@ const emit = defineEmits(['confirm', 'close']);
         <SecondaryButton type="button" :disabled="busy" @click="emit('close')">
           {{ cancelLabel }}
         </SecondaryButton>
-        <DangerButton type="button" :disabled="busy" @click="emit('confirm')">
+        <DangerButton type="button" dusk="confirm-modal-confirm" :disabled="busy" @click="emit('confirm')">
           {{ confirmLabel }}
         </DangerButton>
       </div>

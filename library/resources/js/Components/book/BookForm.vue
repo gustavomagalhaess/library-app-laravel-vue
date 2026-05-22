@@ -154,6 +154,7 @@ function onFileChange(e) {
       <InputLabel value="Title"/>
       <TextInput
         v-model="form.title"
+        dusk="book-title"
         class="mt-1 block w-full"
       />
       <InputError :message="errors.title" class="mt-1"/>
@@ -163,6 +164,7 @@ function onFileChange(e) {
       <InputLabel value="Publication year"/>
       <TextInput
         v-model.number="form.publication_year"
+        dusk="book-year"
         type="number"
         class="mt-1 block w-full"
       />
@@ -189,6 +191,7 @@ function onFileChange(e) {
           v-model="queryText"
           @input="onTypeahead"
           @keydown.enter.prevent="addNewAuthor"
+          dusk="book-author-input"
           type="text"
           placeholder="Type to search (3+ chars) or add a new author"
           class="block w-full"
@@ -219,6 +222,7 @@ function onFileChange(e) {
       <InputLabel value="Pages"/>
       <TextInput
         v-model.number="form.pages"
+        dusk="book-pages"
         type="number"
         class="mt-1 block w-full"
       />
@@ -261,6 +265,7 @@ function onFileChange(e) {
       </DangerButton>
       <SuccessButton
         type="submit"
+        dusk="book-submit"
         :disabled="processing"
       >
           {{ isEdit ? 'Save changes' : 'Add book' }}

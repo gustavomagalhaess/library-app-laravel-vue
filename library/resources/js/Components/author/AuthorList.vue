@@ -34,6 +34,7 @@ function search(term) {
       <h2 class="text-xl font-semibold text-gray-800">Authors</h2>
       <SuccessButton
         v-if="can.create"
+        dusk="author-new"
         @click="emit('new')"
       >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
@@ -65,6 +66,7 @@ function search(term) {
             <td class="px-4 py-2 text-right space-x-1">
               <WarningButton
                 v-if="can.update"
+                :dusk="'author-edit-' + author.id"
                 @click="emit('edit', author)"
               >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
@@ -73,6 +75,7 @@ function search(term) {
               </WarningButton>
               <DeleteButton
                 v-if="can.delete"
+                :dusk="'author-delete-' + author.id"
                 @confirm="emit('delete', author)"
               >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="size-4">
