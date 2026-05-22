@@ -8,6 +8,7 @@
  */
 import { ref, computed, watch } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
+import Dropdown from '@/Components/Dropdown.vue';
 import Toaster from '@/Components/shared/Toaster.vue';
 import { useToasts } from '@/composables/useToasts.js';
 
@@ -97,25 +98,31 @@ function logout() {
 
           <div class="hidden sm:flex sm:items-center gap-4">
             <!-- Telescope + Horizon are NOT Inertia pages — they're standalone
-                 Laravel UIs mounted at /telescope and /horizon. Wrapping them
-                 in <Link> makes Inertia intercept the click and try to render
-                 the response as an Inertia page (which it isn't), which also
-                 swallows target="_blank". Use plain <a> tags so the browser
-                 handles the navigation natively. -->
-            <a
-              v-if="user && hasRole('admin')"
-              href="/telescope"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-sm text-gray-600 hover:text-indigo-600 dark:text-white/50 dark:hover:text-indigo-400"
-            >Telescope</a>
-            <a
-              v-if="user && hasRole('admin')"
-              href="/horizon"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-sm text-gray-600 hover:text-indigo-600 dark:text-white/50 dark:hover:text-indigo-400"
-            >Horizon</a>
+                 Laravel UIs mounted at /telescope and /horizon. Plain <a> tags
+                 are required so the browser handles navigation natively instead
+                 of Inertia intercepting the click. -->
+            <Dropdown v-if="user && hasRole('admin')" align="right" width="48">
+              <template #trigger>
+                <button
+                  type="button"
+                  class="text-sm text-gray-600 hover:text-indigo-600 dark:text-white/50 dark:hover:text-indigo-400"
+                >Dev Tools ▾</button>
+              </template>
+              <template #content>
+                <a
+                  href="/telescope"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                >Telescope</a>
+                <a
+                  href="/horizon"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                >Horizon</a>
+              </template>
+            </Dropdown>
             <Link
               v-if="user"
               :href="route('profile.edit')"
@@ -143,8 +150,10 @@ function logout() {
           <Link :href="route('dashboard')" class="block py-2 text-sm text-gray-700">Dashboard</Link>
           <Link v-if="can('books.view')" :href="route('media.index', { type: 'book' })" class="block py-2 text-sm text-gray-700">Books</Link>
           <Link v-if="can('authors.view')" :href="route('authors.index')" class="block py-2 text-sm text-gray-700">Authors</Link>
-          <a v-if="user && hasRole('admin')" href="/telescope" target="_blank" rel="noopener noreferrer" class="block py-2 text-sm text-gray-700">Telescope</a>
-          <a v-if="user && hasRole('admin')" href="/horizon" target="_blank" rel="noopener noreferrer" class="block py-2 text-sm text-gray-700">Horizon</a>
+          <template v-if="user && hasRole('admin')">
+            <a href="/telescope" target="_blank" rel="noopener noreferrer" class="block py-2 text-sm text-gray-700">Telescope</a>
+            <a href="/horizon" target="_blank" rel="noopener noreferrer" class="block py-2 text-sm text-gray-700">Horizon</a>
+          </template>
           <Link v-if="user" :href="route('profile.edit')" class="block py-2 text-sm text-gray-700">Profile</Link>
           <button type="button" class="block py-2 text-sm text-red-600" @click="logout">Log out</button>
         </div>
