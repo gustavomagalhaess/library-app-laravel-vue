@@ -44,9 +44,9 @@ final readonly class EloquentMediaRepository implements MediaRepositoryInterface
         $table = $definition->table;
 
         return $modelClass::query()
-            // Always pull the morph parent + authors so the JSON payload
-            // includes them without extra queries.
-            ->with('media.authors:id,name')
+            // Always pull the morph parent, authors, and classifications so
+            // the JSON payload includes them without extra queries.
+            ->with(['media.authors:id,name', 'media.classifications:id,code,name'])
             // Title filter lives on the morph parent (media.title), so we
             // only join when there's an actual free-text query to evaluate.
             ->when($query, function (Builder $q, string $term) use ($table): void {
@@ -69,25 +69,26 @@ final readonly class EloquentMediaRepository implements MediaRepositoryInterface
     {
         $modelClass = $this->registry->for($type)->modelClass;
 
-        return $modelClass::query()->with('media.authors:id,name')->find($uuid);
+        return $modelClass::query()->with(['media.authors:id,name', 'media.classifications:id,code,name'])->find($uuid);
     }
 
-    public function create(string $type, array $subtypeAttributes, array $mediaAttributes, array $authorIds): Model
+    public function create(string $type, array $subtypeAttributes, array $mediaAttributes, array $authorIds, array $classificationIds = []): Model
     {
         $modelClass = $this->registry->for($type)->modelClass;
 
-        return DB::transaction(function () use ($modelClass, $subtypeAttributes, $mediaAttributes, $authorIds): Model {
+        return DB::transaction(function () use ($modelClass, $subtypeAttributes, $mediaAttributes, $authorIds, $classificationIds): Model {
             // Create the subtype first so it owns the canonical UUID, then
             // create the matching Media row through the morphOne relationship
             // so Laravel auto-fills `mediable_type` from the morph map and
-            // reuses the subtype's `uuid`. Authors are attached on the Media
-            // side because the pivot is `media_authors`.
+            // reuses the subtype's `uuid`. Authors and classifications are
+            // attached on the Media side via their respective pivot tables.
             /** @var Model $record */
             $record = $modelClass::query()->create($subtypeAttributes);
             $media = $record->media()->create($mediaAttributes);
             $media->authors()->sync($authorIds);
+            $media->classifications()->sync($classificationIds);
 
-            return $record->load('media.authors:id,name');
+            return $record->load(['media.authors:id,name', 'media.classifications:id,code,name']);
         });
     }
 
@@ -97,13 +98,14 @@ final readonly class EloquentMediaRepository implements MediaRepositoryInterface
         array $subtypeAttributes,
         array $mediaAttributes,
         ?array $authorIds = null,
+        ?array $classificationIds = null,
     ): Model {
         // $type is unused at runtime here — the model already knows what it is
         // — but the parameter is kept for symmetry with create() and to leave
         // room for future per-type behaviour (e.g. movie-specific cascades).
         unset($type);
 
-        return DB::transaction(function () use ($record, $subtypeAttributes, $mediaAttributes, $authorIds): Model {
+        return DB::transaction(function () use ($record, $subtypeAttributes, $mediaAttributes, $authorIds, $classificationIds): Model {
             if ($subtypeAttributes !== []) {
                 $record->fill($subtypeAttributes)->save();
             }
@@ -118,13 +120,20 @@ final readonly class EloquentMediaRepository implements MediaRepositoryInterface
                 }
             }
 
-            if ($authorIds !== null) {
-                // Make sure media is loaded after a possible create above.
+            // Make sure media is loaded before touching either pivot.
+            if ($authorIds !== null || $classificationIds !== null) {
                 $record->loadMissing('media');
+            }
+
+            if ($authorIds !== null) {
                 $record->media?->authors()->sync($authorIds);
             }
 
-            return $record->load('media.authors:id,name');
+            if ($classificationIds !== null) {
+                $record->media?->classifications()->sync($classificationIds);
+            }
+
+            return $record->load(['media.authors:id,name', 'media.classifications:id,code,name']);
         });
     }
 

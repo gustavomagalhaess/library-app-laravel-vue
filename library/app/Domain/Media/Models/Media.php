@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Media\Models;
 
 use App\Domain\Author\Models\Author;
+use App\Domain\Classification\Models\Classification;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -78,6 +79,21 @@ class Media extends Model
             table: 'media_authors',
             foreignPivotKey: 'media_id',
             relatedPivotKey: 'author_id',
+            parentKey: 'uuid',
+            relatedKey: 'id',
+        );
+    }
+
+    /**
+     * @return BelongsToMany<Classification>
+     */
+    public function classifications(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            related: Classification::class,
+            table: 'media_classifications',
+            foreignPivotKey: 'media_id',
+            relatedPivotKey: 'classification_id',
             parentKey: 'uuid',
             relatedKey: 'id',
         );

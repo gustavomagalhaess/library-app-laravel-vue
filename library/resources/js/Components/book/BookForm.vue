@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
 import axios from 'axios';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -36,6 +36,7 @@ const isEdit = computed(() => props.mode === 'edit');
 // or a placeholder { id: null, name: 'Newly typed' }.
 // Authors live on the shared media row (the pivot is media_authors).
 const initialAuthors = (props.book?.media?.authors ?? []).map((a) => ({ id: a.id, name: a.name }));
+const initialClassifications = (props.book?.media?.classifications ?? []).map((c) => c.id);
 
 const form = reactive({
   // title / publication_year live on the shared media row.
@@ -46,7 +47,34 @@ const form = reactive({
   // Internal: we hold the chosen authors as objects, then split them into
   // ids[]/new[] right before submit.
   _selected: initialAuthors,
+  _classificationIds: initialClassifications,
 });
+
+// --- Classifications -------------------------------------------------------
+const allClassifications = ref([]);
+const loadingClassifications = ref(true);
+
+onMounted(async () => {
+  try {
+    const { data } = await axios.get(route('classifications.index'));
+    allClassifications.value = data?.data ?? [];
+  } finally {
+    loadingClassifications.value = false;
+  }
+});
+
+function isClassificationSelected(id) {
+  return form._classificationIds.includes(id);
+}
+
+function toggleClassification(id) {
+  const idx = form._classificationIds.indexOf(id);
+  if (idx === -1) {
+    form._classificationIds.push(id);
+  } else {
+    form._classificationIds.splice(idx, 1);
+  }
+}
 
 // --- Author auto-complete --------------------------------------------------
 const queryText = ref('');
@@ -108,6 +136,9 @@ function submit() {
   form._selected
     .filter(a => !a.id)
     .forEach((a, i) => data.append(`authors[new][${i}]`, a.name));
+
+  form._classificationIds
+    .forEach((id, i) => data.append(`classifications[ids][${i}]`, String(id)));
 
   emit('submit', data);
 }
@@ -191,6 +222,24 @@ function onFileChange(e) {
         type="number"
         class="mt-1 block w-full"
       />
+    </div>
+
+    <div>
+      <InputLabel value="Classification"/>
+      <div v-if="loadingClassifications" class="mt-1 text-sm text-gray-400">Loading…</div>
+      <div v-else class="mt-1 flex flex-wrap gap-2">
+        <button
+          v-for="c in allClassifications"
+          :key="c.id"
+          type="button"
+          class="px-3 py-1 rounded-full text-sm border transition-colors"
+          :class="isClassificationSelected(c.id)
+            ? 'bg-indigo-600 border-indigo-600 text-white'
+            : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400'"
+          @click="toggleClassification(c.id)"
+        >{{ c.code }} — {{ c.name }}</button>
+      </div>
+      <InputError :message="errors.classifications" class="mt-1"/>
     </div>
 
     <div>

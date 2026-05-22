@@ -37,6 +37,10 @@ class StoreMediaRequest extends FormRequest
             // Newly typed-in authors that should be created on the fly.
             'authors.new'      => ['array'],
             'authors.new.*'    => ['string', 'max:255'],
+
+            'classifications'       => ['array'],
+            'classifications.ids'   => ['array'],
+            'classifications.ids.*' => ['integer', 'exists:classifications,id'],
         ];
     }
 

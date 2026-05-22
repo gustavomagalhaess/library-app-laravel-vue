@@ -37,12 +37,13 @@ class PersistMediaJob implements ShouldQueue
 
     /**
      * @param 'create'|'update'                 $operation
-     * @param string                            $type           media morph alias (book, …)
-     * @param int                               $trackedJobId   PK of the TrackedJob row to report into
-     * @param array<string, mixed>              $attributes     shared + subtype-specific fields
+     * @param string                            $type              media morph alias (book, …)
+     * @param int                               $trackedJobId      PK of the TrackedJob row to report into
+     * @param array<string, mixed>              $attributes        shared + subtype-specific fields
      * @param array{ids?:int[], new?:string[]}  $authorsInput
-     * @param string|null                       $storedFilePath path on the type's disk; null on update with no new file
-     * @param string|null                       $recordUuid     UUID of the existing record on update; null on create
+     * @param int[]                             $classificationIds pre-seeded classification IDs to sync
+     * @param string|null                       $storedFilePath    path on the type's disk; null on update with no new file
+     * @param string|null                       $recordUuid        UUID of the existing record on update; null on create
      */
     public function __construct(
         public string $operation,
@@ -50,7 +51,8 @@ class PersistMediaJob implements ShouldQueue
         int $trackedJobId,
         public array $attributes,
         public array $authorsInput,
-        public ?string $storedFilePath,
+        public array $classificationIds = [],
+        public ?string $storedFilePath = null,
         public ?string $recordUuid = null,
     ) {
         $this->trackedJobId = $trackedJobId;
@@ -74,6 +76,7 @@ class PersistMediaJob implements ShouldQueue
                 attributes: $this->attributes,
                 authorsInput: $this->authorsInput,
                 storedFilePath: $this->storedFilePath,
+                classificationIds: $this->classificationIds,
             );
         } else {
             if ($this->recordUuid === null) {
@@ -90,13 +93,14 @@ class PersistMediaJob implements ShouldQueue
                 attributes: $this->attributes,
                 authorsInput: $this->authorsInput,
                 storedFilePath: $this->storedFilePath,
+                classificationIds: $this->classificationIds,
             );
         }
 
         // Eager-load relations the SPA's list rows expect, so the frontend can
         // splice the result straight into the existing table without a second
         // request.
-        $record->loadMissing(['media.authors']);
+        $record->loadMissing(['media.authors', 'media.classifications']);
 
         $job->forceFill(['resource_id' => $record->uuid ?? null])->save();
 

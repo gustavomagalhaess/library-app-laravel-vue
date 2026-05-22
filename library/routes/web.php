@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Account\DeleteAccountController;
 use App\Http\Controllers\AuthorController;
+use App\Http\Controllers\ClassificationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JobsController;
 use App\Http\Controllers\MediaController;
@@ -92,6 +93,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('authors', [AuthorController::class, 'index'])
         ->middleware('can:authors.view')
         ->name('authors.index');
+
+    Route::get('classifications', [ClassificationController::class, 'index'])
+        ->name('classifications.index');
 });
 
 /*

@@ -7,9 +7,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Replaces the old `authors_books` pivot. Authors are now attached to media
- * items by UUID, regardless of the underlying type — so a future Movie or
- * Music row can share the same authors table without any schema change.
+ * Authors are attached to media items by UUID, regardless of the underlying type — so a future Movie or Music row
+ * can share the same authors table without any schema change.
  */
 return new class extends Migration {
     public function up(): void

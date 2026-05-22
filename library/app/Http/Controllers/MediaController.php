@@ -100,6 +100,7 @@ class MediaController extends Controller
                     'new' => $request->input('authors.new', []),
                 ],
                 storedFilePath: $storedPath,
+                classificationIds: array_map('intval', $request->input('classifications.ids', [])),
             );
 
             return response()->json(['job' => $job->toPublicArray()], Response::HTTP_ACCEPTED);
@@ -145,6 +146,7 @@ class MediaController extends Controller
                     'new' => $request->input('authors.new', []),
                 ],
                 storedFilePath: $storedPath,
+                classificationIds: array_map('intval', $request->input('classifications.ids', [])),
             );
 
             return response()->json(['job' => $job->toPublicArray()], Response::HTTP_ACCEPTED);

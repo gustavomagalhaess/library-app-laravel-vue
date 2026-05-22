@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Domain\Author\Repositories\AuthorRepositoryInterface;
 use App\Domain\Author\Repositories\EloquentAuthorRepository;
+use App\Domain\Classification\Repositories\ClassificationRepositoryInterface;
+use App\Domain\Classification\Repositories\EloquentClassificationRepository;
 use App\Domain\Media\MediaTypeRegistry;
 use App\Domain\Media\Repositories\EloquentMediaRepository;
 use App\Domain\Media\Repositories\MediaRepositoryInterface;
@@ -41,6 +43,7 @@ class DomainServiceProvider extends ServiceProvider
 
         $this->app->singleton(MediaRepositoryInterface::class, EloquentMediaRepository::class);
         $this->app->singleton(AuthorRepositoryInterface::class, EloquentAuthorRepository::class);
+        $this->app->singleton(ClassificationRepositoryInterface::class, EloquentClassificationRepository::class);
     }
 
     public function boot(): void

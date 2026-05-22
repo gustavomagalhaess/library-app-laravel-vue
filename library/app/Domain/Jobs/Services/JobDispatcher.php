@@ -26,6 +26,7 @@ final class JobDispatcher
     /**
      * @param array<string, mixed>            $attributes
      * @param array{ids?:int[], new?:string[]} $authorsInput
+     * @param int[]                           $classificationIds
      */
     public function dispatchMediaCreate(
         ?User $user,
@@ -33,6 +34,7 @@ final class JobDispatcher
         array $attributes,
         array $authorsInput,
         string $storedFilePath,
+        array $classificationIds = [],
     ): TrackedJob {
         $job = $this->trackingRow($user, 'media.create', payload: [
             'type' => $type,
@@ -45,6 +47,7 @@ final class JobDispatcher
             trackedJobId: $job->id,
             attributes: $attributes,
             authorsInput: $authorsInput,
+            classificationIds: $classificationIds,
             storedFilePath: $storedFilePath,
             recordUuid: null,
         ));
@@ -55,6 +58,7 @@ final class JobDispatcher
     /**
      * @param array<string, mixed>            $attributes
      * @param array{ids?:int[], new?:string[]} $authorsInput
+     * @param int[]|null                      $classificationIds  Pass null to leave classifications untouched.
      */
     public function dispatchMediaUpdate(
         ?User $user,
@@ -63,6 +67,7 @@ final class JobDispatcher
         array $attributes,
         array $authorsInput,
         ?string $storedFilePath,
+        ?array $classificationIds = null,
     ): TrackedJob {
         $job = $this->trackingRow(
             user: $user,
@@ -77,6 +82,7 @@ final class JobDispatcher
             trackedJobId: $job->id,
             attributes: $attributes,
             authorsInput: $authorsInput,
+            classificationIds: $classificationIds ?? [],
             storedFilePath: $storedFilePath,
             recordUuid: $recordUuid,
         ));

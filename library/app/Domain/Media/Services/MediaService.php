@@ -141,12 +141,14 @@ final readonly class MediaService
      *
      * @param  array<string, mixed>             $attributes
      * @param  array{ids?:int[], new?:string[]} $authorsInput
+     * @param  int[]                            $classificationIds
      */
     public function createFromStoredFile(
         string $type,
         array $attributes,
         array $authorsInput,
         string $storedFilePath,
+        array $classificationIds = [],
     ): Model {
         $subtypeAttributes = $this->validateSubtypeFields($type, $attributes);
         $authorIds = $this->resolveAuthorIds($authorsInput);
@@ -160,6 +162,7 @@ final readonly class MediaService
                 'file_path'        => $storedFilePath,
             ],
             authorIds: $authorIds,
+            classificationIds: $classificationIds,
         );
     }
 
@@ -192,6 +195,7 @@ final readonly class MediaService
      *
      * @param  array<string, mixed>                  $attributes
      * @param  array{ids?:int[], new?:string[]}|null $authorsInput
+     * @param  int[]|null                            $classificationIds  Pass null to leave classifications untouched.
      */
     public function updateFromStoredFile(
         string $type,
@@ -199,6 +203,7 @@ final readonly class MediaService
         array $attributes,
         ?array $authorsInput,
         ?string $storedFilePath,
+        ?array $classificationIds = null,
     ): Model {
         $subtypeAttributes = $this->validateSubtypeFields($type, $attributes);
 
@@ -221,7 +226,7 @@ final readonly class MediaService
 
         $authorIds = $authorsInput !== null ? $this->resolveAuthorIds($authorsInput) : null;
 
-        return $this->mediaRepository->update($type, $record, $subtypeAttributes, $mediaAttributes, $authorIds);
+        return $this->mediaRepository->update($type, $record, $subtypeAttributes, $mediaAttributes, $authorIds, $classificationIds);
     }
 
     public function delete(string $type, Model $record): void

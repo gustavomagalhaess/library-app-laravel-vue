@@ -29,6 +29,10 @@ class UpdateMediaRequest extends FormRequest
             'authors.ids.*'    => ['integer', 'exists:authors,id'],
             'authors.new'      => ['array'],
             'authors.new.*'    => ['string', 'max:255'],
+
+            'classifications'       => ['array'],
+            'classifications.ids'   => ['array'],
+            'classifications.ids.*' => ['integer', 'exists:classifications,id'],
         ];
     }
 
