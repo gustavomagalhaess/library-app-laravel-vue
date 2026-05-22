@@ -24,6 +24,8 @@ Manage a personal library of books and their authors. Built per `docs/PROMPT.md`
 │   │   ├── Domain/
 │   │   │   ├── Author/                # Author model, repository (Eloquent), service, exceptions
 │   │   │   ├── Book/                  # Book subtype model
+│   │   │   ├── Classification/        # Classification model, repository, service
+│   │   │   │                          #   (read-only Dewey Decimal lookup — seeded once, never mutated)
 │   │   │   ├── Media/                 # Shared front-end of the polymorphic media stack:
 │   │   │   │                          #   MediaTypeRegistry, MediaService, repository,
 │   │   │   │                          #   MediaSubtype contract, exceptions, message strings
@@ -33,8 +35,8 @@ Manage a personal library of books and their authors. Built per `docs/PROMPT.md`
 │   │   │       ├── Jobs/              #   PersistMediaJob, DeleteMediaJob, PrepareMediaDownloadJob,
 │   │   │       │                      #     PersistAuthorJob, DeleteAuthorJob
 │   │   │       └── Services/          #   JobDispatcher (controller → job glue)
-│   │   ├── Http/Controllers/          # MediaController, AuthorController, JobsController,
-│   │   │                              #   DashboardController, Account/DeleteAccountController
+│   │   ├── Http/Controllers/          # MediaController, AuthorController, ClassificationController,
+│   │   │                              #   JobsController, DashboardController, Account/DeleteAccountController
 │   │   ├── Http/Requests/             # FormRequests (Media/Author Store/Update)
 │   │   ├── Http/Middleware/           # HandleInertiaRequests (shares auth.user/roles/permissions)
 │   │   ├── Policies/                  # MediaPolicy (type-aware gates)
@@ -119,7 +121,7 @@ Every step is idempotent and non-destructive to committed files — there's no `
 
 ## Architecture highlights
 
-**Domain-Driven Design with a shared Media morph.** `app/Domain/Book`, `app/Domain/Author`, and `app/Domain/Media` are independent bounded contexts. Books are stored as a morph subtype of a shared `media` parent: `media` carries the columns common to every media type (title, publication_year, file_path) and is joined to the subtype table by a UUID that's globally unique across all types. Authors are attached at the media level via the `media_authors` pivot, so the same authors table will serve future media types (movies, music, …) without any schema change.
+**Domain-Driven Design with a shared Media morph.** `app/Domain/Book`, `app/Domain/Author`, `app/Domain/Classification`, and `app/Domain/Media` are independent bounded contexts. Books are stored as a morph subtype of a shared `media` parent: `media` carries the columns common to every media type (title, publication_year, file_path) and is joined to the subtype table by a UUID that's globally unique across all types. Authors are attached at the media level via the `media_authors` pivot, so the same authors table will serve future media types (movies, music, …) without any schema change. Classifications (Dewey Decimal categories) are similarly attached at the media level via the `media_classifications` pivot — they are seeded once and never mutated through the UI; the `ClassificationService` exposes a read-only `list()` method used by the book form's category picker.
 
 **Layered request flow (synchronous reads).**
 
@@ -219,20 +221,21 @@ Two route files, split by responsibility:
 
 Inertia renders the SPA shell and the search/download endpoints stay on the web stack so they use the session cookie directly. The `{type}` segment selects which media subtype the request targets and is constrained by `whereIn(array_keys(config('media.types')))` — for now only `book` is registered.
 
-| Method | URI                                              | Name                  | Permission         |
-|--------|--------------------------------------------------|-----------------------|--------------------|
-| GET    | `/`                                              | `home`                | guest              |
-| GET    | `/dashboard`                                     | `dashboard`           | auth, verified     |
-| GET    | `/profile`                                       | `profile.edit`        | auth               |
-| DELETE | `/user`                                          | `current-user.destroy`| auth               |
-| GET    | `/{type}`                                        | `media.index`         | `media.view`       |
-| GET    | `/{type}/search`                                 | `media.search`        | `media.view`       |
-| GET    | `/{type}/{id}/download`                          | `media.download`      | `media.download`   |
-| GET    | `/authors`                                       | `authors.index`       | `authors.view`     |
-| GET    | `/authors/search`                                | `authors.search`      | `authors.view`     |
-| GET    | `/jobs/media/{type}/{id}/download/{job}`         | `jobs.media.download` | signed URL         |
-| GET    | `/horizon`                                       | (Horizon UI)          | `viewHorizon` (admin) |
-| GET    | `/telescope`                                     | (Telescope UI)        | `viewTelescope` (admin) |
+| Method | URI                                              | Name                    | Permission              |
+|--------|--------------------------------------------------|-------------------------|-------------------------|
+| GET    | `/`                                              | `home`                  | guest                   |
+| GET    | `/dashboard`                                     | `dashboard`             | auth, verified          |
+| GET    | `/profile`                                       | `profile.edit`          | auth                    |
+| DELETE | `/user`                                          | `current-user.destroy`  | auth                    |
+| GET    | `/{type}`                                        | `media.index`           | `media.view`            |
+| GET    | `/{type}/search`                                 | `media.search`          | `media.view`            |
+| GET    | `/{type}/{id}/download`                          | `media.download`        | `media.download`        |
+| GET    | `/authors`                                       | `authors.index`         | `authors.view`          |
+| GET    | `/authors/search`                                | `authors.search`        | `authors.view`          |
+| GET    | `/classifications`                               | `classifications.index` | auth, verified          |
+| GET    | `/jobs/media/{type}/{id}/download/{job}`         | `jobs.media.download`   | signed URL              |
+| GET    | `/horizon`                                       | (Horizon UI)            | `viewHorizon` (admin)   |
+| GET    | `/telescope`                                     | (Telescope UI)          | `viewTelescope` (admin) |
 
 The Fortify auth routes (`login`, `register`, `password.request`, `password.reset`, `verification.notice`, `verification.verify`, `user-profile-information.update`, `user-password.update`, `two-factor.*`) are registered automatically and aren't repeated here.
 
