@@ -9,9 +9,6 @@ services:
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
-      # Single bind mount — uploaded book PDFs live at
-      # ./library/storage/app/private/books on the host. Same UID/GID, no
-      # named-volume permission dance.
       - ./library:/var/www/html
     environment:
       PHP_IDE_CONFIG: serverName=library

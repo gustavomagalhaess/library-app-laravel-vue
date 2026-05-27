@@ -3,6 +3,7 @@
 namespace App\Domain\Classification\Models;
 
 use App\Domain\Book\Models\Book;
+use App\Domain\Media\Models\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
@@ -20,22 +21,17 @@ class Classification extends Model
     /**
      * Books that belongs to this classification.
      *
-     * The pivot is the shared `media_classifications` table (keyed by media UUID).
-     * Joining onto `books.uuid` automatically restricts results to book rows
-     * — pivot entries for other media types (movies, music, …) won't surface
-     * here because their UUIDs don't exist in the `books` table.
-     *
-     * @return BelongsToMany<Book>
+     * @return BelongsToMany<Media>
      */
     public function books(): BelongsToMany
     {
         return $this->belongsToMany(
-            related: Book::class,
-            table: 'book_classifications',
+            related: Media::class,
+            table: 'media_classifications',
             foreignPivotKey: 'classification_id',
-            relatedPivotKey: 'book_id',
+            relatedPivotKey: 'media_id',
             parentKey: 'id',
-            relatedKey: 'id',
-        );
+            relatedKey: 'uuid',
+        )->where('mediable_type', Book::MORPH_ALIAS);
     }
 }

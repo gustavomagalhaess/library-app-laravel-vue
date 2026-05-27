@@ -61,8 +61,6 @@ class Media extends Model
 
     /**
      * Morph back to the concrete subtype model (Book, future Movie, …).
-     * Note the third argument: the morph id column on `media` is `uuid`,
-     * matching the subtype's `uuid` primary key (fourth argument).
      */
     public function mediable(): MorphTo
     {

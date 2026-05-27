@@ -67,10 +67,7 @@ class Book extends Model implements MediaSubtype
 
     /**
      * The 1:1 Media row that carries the book's shared metadata (title,
-     * publication_year, file_path) and owns the authors relationship.
-     *
-     * morphOne args: related, name, type column on related,
-     * id column on related (uuid), local key on this model (uuid).
+     * publication_year, file_path) and owns the author's relationship.
      */
     public function media(): MorphOne
     {

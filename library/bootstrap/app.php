@@ -9,10 +9,10 @@ use Illuminate\Foundation\Configuration\Middleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
-        // REST endpoints for the SPA (store/update/delete for media + authors)
-        // live under /api/*. They share the same Spatie permissions and Gates
-        // as the Inertia routes — the only thing different is the response
-        // contract (JSON instead of redirects).
+        // REST endpoints for the SPA (store/update/delete for media + authors
+        // + classifications) live under /api/*. They share the same Spatie
+        // permissions and Gates as the Inertia routes — the only thing
+        // different is the response contract (JSON instead of redirects).
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',

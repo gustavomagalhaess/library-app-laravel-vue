@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Author\Models;
 
 use App\Domain\Book\Models\Book;
+use App\Domain\Media\Models\Media;
 use Database\Factories\AuthorFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,23 +29,18 @@ class Author extends Model
     /**
      * Books written by this author.
      *
-     * The pivot is the shared `media_authors` table (keyed by media UUID).
-     * Joining onto `books.uuid` automatically restricts results to book rows
-     * — pivot entries for other media types (movies, music, …) won't surface
-     * here because their UUIDs don't exist in the `books` table.
-     *
-     * @return BelongsToMany<Book>
+     * @return BelongsToMany<Media>
      */
     public function books(): BelongsToMany
     {
         return $this->belongsToMany(
-            related: Book::class,
+            related: Media::class,
             table: 'media_authors',
             foreignPivotKey: 'author_id',
             relatedPivotKey: 'media_id',
             parentKey: 'id',
             relatedKey: 'uuid',
-        );
+        )->where('mediable_type', Book::MORPH_ALIAS);
     }
 
     protected static function newFactory(): AuthorFactory

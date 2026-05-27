@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Media;
 
 use App\Domain\Media\Contracts\MediaSubtype;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Immutable snapshot of the metadata one media subtype exposes.
@@ -14,7 +15,7 @@ use App\Domain\Media\Contracts\MediaSubtype;
  * static methods on the model directly, which keeps the runtime code free of
  * `Book::`/`Movie::` branches.
  *
- * @template-covariant TModel of \Illuminate\Database\Eloquent\Model&MediaSubtype
+ * @template-covariant TModel of Model&MediaSubtype
  */
 final readonly class MediaTypeDefinition
 {

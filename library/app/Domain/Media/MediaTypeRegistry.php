@@ -76,7 +76,7 @@ final class MediaTypeRegistry
     {
         $key = Str::lower($type);
 
-        return $this->byType[$key] ?? throw new MediaException(MediaMessage::UNSUPORTED_MEDIA_TYPE);
+        return $this->byType[$key] ?? throw new MediaException(MediaMessage::UNSUPPORTED_MEDIA_TYPE);
     }
 
     /**
