@@ -1,6 +1,6 @@
 # Library App — Laravel + Vue (Inertia) + Docker
 
-Manage a personal library of books and their authors. Built per `docs/PROMPT.md` with:
+Manage a personal library of books and their authors with:
 
 - PHP 8.3 (Alpine) + Laravel 12 (latest stable)
 - Vue 3 + Inertia.js + Vite (Laravel Breeze starter for the auth/UI scaffold)
@@ -11,7 +11,7 @@ Manage a personal library of books and their authors. Built per `docs/PROMPT.md`
 - Laravel Horizon (Redis queue worker + dashboard) + Laravel Telescope (request/job/log inspector)
 - Domain-Driven Design layout with Service / Repository / Cache layers and Redis-backed queued writes
 
-## Project layout
+## Project structure
 
 ```
 .
