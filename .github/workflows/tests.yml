@@ -61,6 +61,13 @@ jobs:
       - name: Create root .env for Docker Compose
         run: cp .env.example .env
 
+      - name: Fix file ownership for container user
+        # GitHub Actions checks out files as the runner user (~uid 1001).
+        # The container's `app` user has uid=1000 (APP_UID in .env.example).
+        # Without this, uid 1000 hits "other" permissions on the bind-mount
+        # and Composer cannot create vendor/ or any new directory.
+        run: sudo chown -R 1000:1000 library/
+
       - name: Build Docker images
         run: docker compose build
 
