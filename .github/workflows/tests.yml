@@ -1,0 +1,129 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: ["**"]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  phpunit:
+    name: PHPUnit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read PHP version
+        id: php-version
+        run: echo "version=$(grep '^PHP_VERSION=' .env.example | cut -d= -f2)" >> $GITHUB_OUTPUT
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ steps.php-version.outputs.version }}
+          extensions: pdo_sqlite, sqlite3
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: library/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('library/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        working-directory: ./library
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+
+      - name: Prepare environment
+        working-directory: ./library
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run tests
+        working-directory: ./library
+        run: php artisan test
+
+  dusk:
+    name: Dusk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create root .env for Docker Compose
+        run: cp .env.example .env
+
+      - name: Build Docker images
+        run: docker compose build
+
+      - name: Start services
+        # app depends_on db with service_healthy — compose blocks until MySQL
+        # healthcheck passes, so by the time this step returns the full stack
+        # (app, web, db, redis) is ready. worker is omitted: .env.dusk.local
+        # sets QUEUE_CONNECTION=sync so jobs run inline during browser tests.
+        run: docker compose up -d app web db redis
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: library/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('library/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: docker compose exec -T app composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+
+      - name: Prepare Laravel environment
+        run: |
+          docker compose exec -T app cp .env.example .env
+          docker compose exec -T app php artisan key:generate
+
+      - name: Build frontend assets
+        # Dusk's Chromium renders the real Blade root view which calls @vite().
+        # Without public/build/manifest.json the directive throws and Chromium
+        # gets a Laravel error page instead of the SPA — every selector lookup
+        # then fails. npm ci inside the app container (which has Node installed)
+        # ensures a clean, reproducible install before building.
+        run: |
+          docker compose exec -T app npm ci
+          docker compose exec -T app npm run build
+
+      - name: Migrate Dusk database
+        # --env=dusk.local loads library/.env.dusk.local, pointing artisan at
+        # library_dusk (created by docker/mysql/init/01-create-dusk-db.sql on
+        # first volume boot). --force is required to run in non-interactive CI.
+        run: docker compose exec -T app php artisan migrate --env=dusk.local --force
+
+      - name: Run Dusk tests
+        # php artisan dusk automatically overlays .env.dusk.local (APP_URL=http://web,
+        # QUEUE_CONNECTION=sync, CHROME_BIN, DUSK_DRIVER_URL). Chromium and
+        # chromedriver are installed in the Alpine image and run headless inside
+        # the app container — no host browser setup required.
+        run: docker compose exec -T app php artisan dusk
+
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dusk-screenshots
+          path: library/tests/Browser/screenshots
+
+      - name: Upload console logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dusk-console-logs
+          path: library/tests/Browser/console
