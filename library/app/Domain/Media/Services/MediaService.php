@@ -8,9 +8,10 @@ use App\Domain\Author\Models\Author;
 use App\Domain\Author\Repositories\AuthorRepositoryInterface;
 use App\Domain\Media\Exceptions\MediaException;
 use App\Domain\Media\MediaTypeRegistry;
-use App\Domain\Media\Messages\MediaMessage;
 use App\Domain\Media\Repositories\MediaRepositoryInterface;
 use App\Models\User;
+use App\Policies\MediaPolicy;
+use App\Providers\AuthServiceProvider;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -41,9 +42,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 final readonly class MediaService
 {
     public function __construct(
-        private MediaRepositoryInterface  $mediaRepository,
+        private MediaRepositoryInterface $mediaRepository,
         private AuthorRepositoryInterface $authorRepository,
-        private MediaTypeRegistry         $registry,
+        private MediaTypeRegistry $registry,
     ) {}
 
     // ---------------------------------------------------------------------
@@ -67,8 +68,8 @@ final readonly class MediaService
     /**
      * Per-action booleans for the Inertia `can` payload (used by Vue to
      * show/hide action buttons). Delegates to the `media.*` Gates registered
-     * in {@see \App\Providers\AuthServiceProvider} so the type → permission
-     * mapping lives in exactly one place ({@see \App\Policies\MediaPolicy}).
+     * in {@see AuthServiceProvider} so the type → permission
+     * mapping lives in exactly one place ({@see MediaPolicy}).
      *
      * @return array{create:bool, update:bool, delete:bool, download:bool}
      */
@@ -79,9 +80,9 @@ final readonly class MediaService
         }
 
         return [
-            'create'   => $user->can('media.create', $type),
-            'update'   => $user->can('media.update', $type),
-            'delete'   => $user->can('media.delete', $type),
+            'create' => $user->can('media.create', $type),
+            'update' => $user->can('media.update', $type),
+            'delete' => $user->can('media.delete', $type),
             'download' => $user->can('media.download', $type),
         ];
     }
@@ -118,8 +119,8 @@ final readonly class MediaService
     }
 
     /**
-     * @param  array<string, mixed>             $attributes   Mixed payload — shared (title/year) + subtype-specific.
-     * @param  array{ids?:int[], new?:string[]} $authorsInput
+     * @param  array<string, mixed>  $attributes  Mixed payload — shared (title/year) + subtype-specific.
+     * @param  array{ids?:int[], new?:string[]}  $authorsInput
      */
     public function create(string $type, array $attributes, array $authorsInput, UploadedFile $file): Model
     {
@@ -139,9 +140,9 @@ final readonly class MediaService
      * because UploadedFile instances aren't queue-serializable), so we receive
      * the resolved disk path instead. Behavior is otherwise identical.
      *
-     * @param  array<string, mixed>             $attributes
-     * @param  array{ids?:int[], new?:string[]} $authorsInput
-     * @param  int[]                            $classificationIds
+     * @param  array<string, mixed>  $attributes
+     * @param  array{ids?:int[], new?:string[]}  $authorsInput
+     * @param  int[]  $classificationIds
      */
     public function createFromStoredFile(
         string $type,
@@ -157,9 +158,9 @@ final readonly class MediaService
             type: $type,
             subtypeAttributes: $subtypeAttributes,
             mediaAttributes: [
-                'title'            => $attributes['title'],
+                'title' => $attributes['title'],
                 'publication_year' => $attributes['publication_year'],
-                'file_path'        => $storedFilePath,
+                'file_path' => $storedFilePath,
             ],
             authorIds: $authorIds,
             classificationIds: $classificationIds,
@@ -167,8 +168,8 @@ final readonly class MediaService
     }
 
     /**
-     * @param  array<string, mixed>                  $attributes
-     * @param  array{ids?:int[], new?:string[]}|null $authorsInput  Pass null to leave authors untouched.
+     * @param  array<string, mixed>  $attributes
+     * @param  array{ids?:int[], new?:string[]}|null  $authorsInput  Pass null to leave authors untouched.
      */
     public function update(
         string $type,
@@ -193,9 +194,9 @@ final readonly class MediaService
      * the uploaded file to its final disk location (or passed null to indicate
      * "no file change"), so we receive a string path instead of an UploadedFile.
      *
-     * @param  array<string, mixed>                  $attributes
-     * @param  array{ids?:int[], new?:string[]}|null $authorsInput
-     * @param  int[]|null                            $classificationIds  Pass null to leave classifications untouched.
+     * @param  array<string, mixed>  $attributes
+     * @param  array{ids?:int[], new?:string[]}|null  $authorsInput
+     * @param  int[]|null  $classificationIds  Pass null to leave classifications untouched.
      */
     public function updateFromStoredFile(
         string $type,
@@ -209,7 +210,7 @@ final readonly class MediaService
 
         $mediaAttributes = array_filter(
             [
-                'title'            => $attributes['title'] ?? null,
+                'title' => $attributes['title'] ?? null,
                 'publication_year' => $attributes['publication_year'] ?? null,
             ],
             static fn ($v) => $v !== null,
@@ -275,7 +276,7 @@ final readonly class MediaService
      * (title, publication_year, file) are validated by the FormRequest before
      * we ever get here.
      *
-     * @param  array<string, mixed> $attributes
+     * @param  array<string, mixed>  $attributes
      * @return array<string, mixed>
      */
     private function validateSubtypeFields(string $type, array $attributes): array
@@ -298,7 +299,7 @@ final readonly class MediaService
     /**
      * Combine pre-existing author IDs with any newly-created author names.
      *
-     * @param  array{ids?:int[], new?:string[]} $input
+     * @param  array{ids?:int[], new?:string[]}  $input
      * @return int[]
      */
     private function resolveAuthorIds(array $input): array

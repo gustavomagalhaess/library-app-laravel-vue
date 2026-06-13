@@ -33,7 +33,7 @@ class LoginTest extends DuskTestCase
         $this->seed(RolesAndPermissionsSeeder::class);
 
         $user = User::factory()->create([
-            'name'  => 'Test Reader',
+            'name' => 'Test Reader',
             'email' => 'tester@library.local',
             // UserFactory defaults password to "password", so we don't
             // override it here — the @factory's static $password is

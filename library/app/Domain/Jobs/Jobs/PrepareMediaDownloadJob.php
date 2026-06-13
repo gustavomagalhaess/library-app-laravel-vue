@@ -34,6 +34,7 @@ class PrepareMediaDownloadJob implements ShouldQueue
     use TracksProgress;
 
     public int $tries = 2;
+
     public int $timeout = 120;
 
     /** Signed-URL lifetime — long enough for a human to click, short enough to limit replay. */
@@ -62,7 +63,7 @@ class PrepareMediaDownloadJob implements ShouldQueue
 
         $definition = $registry->for($this->type);
         $path = $record->media?->file_path;
-        if (!$path || !Storage::disk($definition->disk)->exists($path)) {
+        if (! $path || ! Storage::disk($definition->disk)->exists($path)) {
             throw new \RuntimeException('File not available for download.');
         }
 
@@ -79,14 +80,14 @@ class PrepareMediaDownloadJob implements ShouldQueue
             expiration: now()->addMinutes(self::URL_TTL_MINUTES),
             parameters: [
                 'type' => $this->type,
-                'id'   => $this->recordUuid,
-                'job'  => $job->uuid,
+                'id' => $this->recordUuid,
+                'job' => $job->uuid,
             ],
         );
 
         return [
-            'url'        => $url,
-            'filename'   => $filename,
+            'url' => $url,
+            'filename' => $filename,
             'expires_at' => now()->addMinutes(self::URL_TTL_MINUTES)->toIso8601String(),
         ];
     }

@@ -10,7 +10,6 @@ use Database\Seeders\RolesAndPermissionsSeeder;
 use Facebook\WebDriver\WebDriverKeys;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Laravel\Dusk\Browser;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\DuskTestCase;
 
 /**
@@ -106,8 +105,8 @@ class BookCrudTest extends DuskTestCase
 
             $browser->visit('/book')
                 // Target the specific row's edit button by its dusk attribute.
-                ->waitFor('@book-edit-' . $book->uuid)
-                ->click('@book-edit-' . $book->uuid)
+                ->waitFor('@book-edit-'.$book->uuid)
+                ->click('@book-edit-'.$book->uuid)
                 ->waitFor('@book-title')
                 // type() clears the field before typing, replacing the existing title.
                 ->type('@book-title', 'Updated Book Title')
@@ -130,18 +129,18 @@ class BookCrudTest extends DuskTestCase
             $this->loginAs($browser);
 
             $browser->visit('/book')
-                ->waitFor('@book-delete-' . $book->uuid)
-                ->click('@book-delete-' . $book->uuid)
+                ->waitFor('@book-delete-'.$book->uuid)
+                ->click('@book-delete-'.$book->uuid)
                 // ConfirmModal appears — wait for the confirm button.
                 ->waitFor('@confirm-modal-confirm')
                 ->click('@confirm-modal-confirm')
-                ->waitForText('"' . $title . '" was deleted.', 10)
+                ->waitForText('"'.$title.'" was deleted.', 10)
                 // Wait for the Inertia partial-reload to remove the row from the
                 // table. assertDontSee would be synchronous and could race;
                 // waitUntil polls until the tbody no longer contains the title.
                 // The toast briefly holds the title too, so we scope to tbody.
                 ->waitUntil(
-                    '!document.querySelector(\'tbody\').innerText.includes(' . json_encode($title) . ')',
+                    '!document.querySelector(\'tbody\').innerText.includes('.json_encode($title).')',
                     10,
                 );
         });
@@ -154,7 +153,7 @@ class BookCrudTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($book): void {
             $this->loginAs($browser, 'librarian');
 
-            $browser->visit('/book')->assertMissing('@book-delete-' . $book->uuid);
+            $browser->visit('/book')->assertMissing('@book-delete-'.$book->uuid);
         });
     }
 
@@ -162,7 +161,7 @@ class BookCrudTest extends DuskTestCase
     {
         $book = Book::factory()->create();
 
-        $this->browse(function (Browser $browser) use ($book): void {
+        $this->browse(function (Browser $browser): void {
             $this->loginAs($browser, 'reader');
 
             $browser->visit('/book')->assertMissing('@book-new');
@@ -176,7 +175,7 @@ class BookCrudTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($book): void {
             $this->loginAs($browser, 'reader');
 
-            $browser->visit('/book')->assertMissing('@book-edit-' . $book->uuid);
+            $browser->visit('/book')->assertMissing('@book-edit-'.$book->uuid);
         });
     }
 
@@ -187,7 +186,7 @@ class BookCrudTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($book): void {
             $this->loginAs($browser, 'reader');
 
-            $browser->visit('/book')->assertMissing('@book-delete-' . $book->uuid);
+            $browser->visit('/book')->assertMissing('@book-delete-'.$book->uuid);
         });
     }
 }

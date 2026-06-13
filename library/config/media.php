@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Domain\Book\Models\Book;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,7 +30,7 @@ declare(strict_types=1);
 
 return [
     'types' => [
-        'book' => \App\Domain\Book\Models\Book::class,
+        'book' => Book::class,
         // 'movie' => \App\Domain\Movie\Models\Movie::class,
         // 'music' => \App\Domain\Music\Models\Music::class,
     ],

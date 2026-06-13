@@ -36,14 +36,14 @@ class PersistMediaJob implements ShouldQueue
     public int $timeout = 60;
 
     /**
-     * @param 'create'|'update'                 $operation
-     * @param string                            $type              media morph alias (book, …)
-     * @param int                               $trackedJobId      PK of the TrackedJob row to report into
-     * @param array<string, mixed>              $attributes        shared + subtype-specific fields
-     * @param array{ids?:int[], new?:string[]}  $authorsInput
-     * @param int[]                             $classificationIds pre-seeded classification IDs to sync
-     * @param string|null                       $storedFilePath    path on the type's disk; null on update with no new file
-     * @param string|null                       $recordUuid        UUID of the existing record on update; null on create
+     * @param  'create'|'update'  $operation
+     * @param  string  $type  media morph alias (book, …)
+     * @param  int  $trackedJobId  PK of the TrackedJob row to report into
+     * @param  array<string, mixed>  $attributes  shared + subtype-specific fields
+     * @param  array{ids?:int[], new?:string[]}  $authorsInput
+     * @param  int[]  $classificationIds  pre-seeded classification IDs to sync
+     * @param  string|null  $storedFilePath  path on the type's disk; null on update with no new file
+     * @param  string|null  $recordUuid  UUID of the existing record on update; null on create
      */
     public function __construct(
         public string $operation,

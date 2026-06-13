@@ -36,8 +36,11 @@ use Illuminate\Support\Str;
 class TrackedJob extends Model
 {
     public const STATUS_QUEUED = 'queued';
+
     public const STATUS_PROCESSING = 'processing';
+
     public const STATUS_COMPLETED = 'completed';
+
     public const STATUS_FAILED = 'failed';
 
     protected $table = 'tracked_jobs';
@@ -136,14 +139,14 @@ class TrackedJob extends Model
     public function toPublicArray(): array
     {
         return [
-            'id'           => $this->uuid,
-            'type'         => $this->type,
-            'status'       => $this->status,
-            'resource_id'  => $this->resource_id,
-            'message'      => $this->message,
-            'result'       => $this->result,
-            'started_at'   => optional($this->started_at)->toIso8601String(),
-            'finished_at'  => optional($this->finished_at)->toIso8601String(),
+            'id' => $this->uuid,
+            'type' => $this->type,
+            'status' => $this->status,
+            'resource_id' => $this->resource_id,
+            'message' => $this->message,
+            'result' => $this->result,
+            'started_at' => optional($this->started_at)->toIso8601String(),
+            'finished_at' => optional($this->finished_at)->toIso8601String(),
         ];
     }
 }

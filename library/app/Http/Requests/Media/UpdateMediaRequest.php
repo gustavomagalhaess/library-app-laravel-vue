@@ -19,19 +19,19 @@ class UpdateMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title'            => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255'],
             'publication_year' => ['required', 'integer', 'between:1000,'.((int) date('Y') + 1)],
             // File is optional on update — a present file replaces the previous one.
-            'file'             => ['sometimes', 'nullable', 'file', 'mimes:pdf', 'max:51200'],
+            'file' => ['sometimes', 'nullable', 'file', 'mimes:pdf', 'max:51200'],
 
-            'authors'          => ['array'],
-            'authors.ids'      => ['array'],
-            'authors.ids.*'    => ['integer', 'exists:authors,id'],
-            'authors.new'      => ['array'],
-            'authors.new.*'    => ['string', 'max:255'],
+            'authors' => ['array'],
+            'authors.ids' => ['array'],
+            'authors.ids.*' => ['integer', 'exists:authors,id'],
+            'authors.new' => ['array'],
+            'authors.new.*' => ['string', 'max:255'],
 
-            'classifications'       => ['array'],
-            'classifications.ids'   => ['array'],
+            'classifications' => ['array'],
+            'classifications.ids' => ['array'],
             'classifications.ids.*' => ['integer', 'exists:classifications,id'],
         ];
     }

@@ -43,6 +43,7 @@ final class EloquentAuthorRepository implements AuthorRepositoryInterface
     public function update(Author $author, string $name): Author
     {
         $author->fill(['name' => $name])->save();
+
         return $author;
     }
 

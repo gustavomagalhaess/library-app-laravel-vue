@@ -80,8 +80,8 @@ class AuthorCrudTest extends DuskTestCase
             $this->loginAs($browser);
 
             $browser->visit('/authors')
-                ->waitFor('@author-edit-' . $author->id)
-                ->click('@author-edit-' . $author->id)
+                ->waitFor('@author-edit-'.$author->id)
+                ->click('@author-edit-'.$author->id)
                 ->waitFor('@author-name')
                 ->type('@author-name', 'New Name')
                 ->click('@author-submit')
@@ -100,13 +100,13 @@ class AuthorCrudTest extends DuskTestCase
             $this->loginAs($browser);
 
             $browser->visit('/authors')
-                ->waitFor('@author-delete-' . $author->id)
-                ->click('@author-delete-' . $author->id)
+                ->waitFor('@author-delete-'.$author->id)
+                ->click('@author-delete-'.$author->id)
                 ->waitFor('@confirm-modal-confirm')
                 ->click('@confirm-modal-confirm')
-                ->waitForText('"' . $name . '" was deleted.', 10)
+                ->waitForText('"'.$name.'" was deleted.', 10)
                 ->waitUntil(
-                    '!document.querySelector(\'tbody\').innerText.includes(' . json_encode($name) . ')',
+                    '!document.querySelector(\'tbody\').innerText.includes('.json_encode($name).')',
                     10,
                 );
         });
@@ -140,8 +140,8 @@ class AuthorCrudTest extends DuskTestCase
             $this->loginAs($browser, 'librarian');
 
             $browser->visit('/authors')
-                ->waitFor('@author-edit-' . $author->id)
-                ->click('@author-edit-' . $author->id)
+                ->waitFor('@author-edit-'.$author->id)
+                ->click('@author-edit-'.$author->id)
                 ->waitFor('@author-name')
                 ->type('@author-name', 'New Name')
                 ->click('@author-submit')
@@ -158,8 +158,8 @@ class AuthorCrudTest extends DuskTestCase
             $this->loginAs($browser, 'librarian');
 
             $browser->visit('/authors')
-                ->waitFor('@author-edit-' . $author->id)
-                ->assertMissing('@author-delete-' . $author->id);
+                ->waitFor('@author-edit-'.$author->id)
+                ->assertMissing('@author-delete-'.$author->id);
         });
     }
 
@@ -187,7 +187,7 @@ class AuthorCrudTest extends DuskTestCase
 
             $browser->visit('/authors')
                 ->waitForText($author->name)
-                ->assertMissing('@author-edit-' . $author->id);
+                ->assertMissing('@author-edit-'.$author->id);
         });
     }
 
@@ -200,7 +200,7 @@ class AuthorCrudTest extends DuskTestCase
 
             $browser->visit('/authors')
                 ->waitForText($author->name)
-                ->assertMissing('@author-delete-' . $author->id);
+                ->assertMissing('@author-delete-'.$author->id);
         });
     }
 }

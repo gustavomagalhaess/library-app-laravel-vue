@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 /**
  * Aggregate root for the Author bounded context.
  *
- * @property int    $id
+ * @property int $id
  * @property string $name
  */
 class Author extends Model

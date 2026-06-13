@@ -8,6 +8,7 @@ use App\Domain\Media\Contracts\MediaSubtype;
 use App\Domain\Media\Exceptions\MediaException;
 use App\Domain\Media\Messages\MediaMessage;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 
 /**
@@ -88,7 +89,7 @@ final class MediaTypeRegistry
     }
 
     /**
-     * @return array<string, class-string> Map suitable for {@see \Illuminate\Database\Eloquent\Relations\Relation::morphMap()}.
+     * @return array<string, class-string> Map suitable for {@see Relation::morphMap()}.
      */
     public function morphMap(): array
     {

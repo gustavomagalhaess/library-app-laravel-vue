@@ -2,7 +2,4 @@
 
 namespace App\Domain\Media\Exceptions;
 
-class MediaException extends \Exception
-{
-
-}
+class MediaException extends \Exception {}
