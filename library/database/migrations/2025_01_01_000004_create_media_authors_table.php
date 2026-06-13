@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Schema;
  * Authors are attached to media items by UUID, regardless of the underlying type — so a future Movie or Music row
  * can share the same authors table without any schema change.
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('media_authors', function (Blueprint $table): void {

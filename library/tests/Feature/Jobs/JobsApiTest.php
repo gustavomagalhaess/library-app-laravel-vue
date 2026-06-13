@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Jobs;
 
+use App\Domain\Author\Models\Author;
 use App\Domain\Jobs\Jobs\DeleteAuthorJob;
 use App\Domain\Jobs\Jobs\DeleteMediaJob;
 use App\Domain\Jobs\Jobs\PersistAuthorJob;
 use App\Domain\Jobs\Jobs\PersistMediaJob;
 use App\Domain\Jobs\Jobs\PrepareMediaDownloadJob;
 use App\Domain\Jobs\Models\TrackedJob;
-use App\Domain\Author\Models\Author;
 use App\Models\User;
 use Database\Factories\BookFactory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,11 +43,11 @@ class JobsApiTest extends TestCase
         $author = Author::factory()->create();
 
         $this->postJson('/api/book', [
-            'title'            => 'Queued Title',
+            'title' => 'Queued Title',
             'publication_year' => 2024,
-            'pages'            => 100,
-            'file'             => UploadedFile::fake()->create('book.pdf', 100, 'application/pdf'),
-            'authors'          => ['ids' => [$author->id], 'new' => []],
+            'pages' => 100,
+            'file' => UploadedFile::fake()->create('book.pdf', 100, 'application/pdf'),
+            'authors' => ['ids' => [$author->id], 'new' => []],
         ])->assertStatus(Response::HTTP_ACCEPTED);
 
         Bus::assertDispatched(PersistMediaJob::class, function (PersistMediaJob $job): bool {
@@ -57,7 +57,7 @@ class JobsApiTest extends TestCase
         });
 
         $this->assertDatabaseHas('tracked_jobs', [
-            'type'   => 'media.create',
+            'type' => 'media.create',
             'status' => TrackedJob::STATUS_QUEUED,
         ]);
     }
@@ -131,9 +131,9 @@ class JobsApiTest extends TestCase
         $user = $this->loginAsRole('admin');
         $job = TrackedJob::create([
             'user_id' => $user->id,
-            'type'    => 'media.create',
-            'status'  => TrackedJob::STATUS_COMPLETED,
-            'result'  => ['record' => ['id' => 7]],
+            'type' => 'media.create',
+            'status' => TrackedJob::STATUS_COMPLETED,
+            'result' => ['record' => ['id' => 7]],
         ]);
 
         $this->getJson("/api/jobs/{$job->uuid}")
@@ -147,8 +147,8 @@ class JobsApiTest extends TestCase
         $owner = User::factory()->create();
         $job = TrackedJob::create([
             'user_id' => $owner->id,
-            'type'    => 'media.create',
-            'status'  => TrackedJob::STATUS_QUEUED,
+            'type' => 'media.create',
+            'status' => TrackedJob::STATUS_QUEUED,
         ]);
 
         $this->loginAsRole('reader');
@@ -162,8 +162,8 @@ class JobsApiTest extends TestCase
         $owner = User::factory()->create();
         $job = TrackedJob::create([
             'user_id' => $owner->id,
-            'type'    => 'media.create',
-            'status'  => TrackedJob::STATUS_QUEUED,
+            'type' => 'media.create',
+            'status' => TrackedJob::STATUS_QUEUED,
         ]);
 
         $this->loginAsRole('admin');

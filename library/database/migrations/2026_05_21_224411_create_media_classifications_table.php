@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Schema;
  * Classifications are attached to media items by UUID, regardless of the underlying type — so a future Movie or Music
  * row can share the same classifications table without any schema change.
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('media_classifications', function (Blueprint $table): void {

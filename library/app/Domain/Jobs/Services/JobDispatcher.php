@@ -24,9 +24,9 @@ use Illuminate\Support\Facades\Bus;
 final class JobDispatcher
 {
     /**
-     * @param array<string, mixed>            $attributes
-     * @param array{ids?:int[], new?:string[]} $authorsInput
-     * @param int[]                           $classificationIds
+     * @param  array<string, mixed>  $attributes
+     * @param  array{ids?:int[], new?:string[]}  $authorsInput
+     * @param  int[]  $classificationIds
      */
     public function dispatchMediaCreate(
         ?User $user,
@@ -56,9 +56,9 @@ final class JobDispatcher
     }
 
     /**
-     * @param array<string, mixed>            $attributes
-     * @param array{ids?:int[], new?:string[]} $authorsInput
-     * @param int[]|null                      $classificationIds  Pass null to leave classifications untouched.
+     * @param  array<string, mixed>  $attributes
+     * @param  array{ids?:int[], new?:string[]}  $authorsInput
+     * @param  int[]|null  $classificationIds  Pass null to leave classifications untouched.
      */
     public function dispatchMediaUpdate(
         ?User $user,
@@ -180,11 +180,11 @@ final class JobDispatcher
     private function trackingRow(?User $user, string $type, array $payload, ?string $resourceId = null): TrackedJob
     {
         return TrackedJob::create([
-            'user_id'     => $user?->id,
-            'type'        => $type,
+            'user_id' => $user?->id,
+            'type' => $type,
             'resource_id' => $resourceId,
-            'status'      => TrackedJob::STATUS_QUEUED,
-            'payload'     => $payload,
+            'status' => TrackedJob::STATUS_QUEUED,
+            'payload' => $payload,
         ]);
     }
 }

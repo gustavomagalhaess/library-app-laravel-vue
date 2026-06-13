@@ -16,7 +16,8 @@ use Illuminate\Support\Facades\Schema;
  *                  movies.uuid (future)
  *                  music.uuid  (future)
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('media', function (Blueprint $table): void {

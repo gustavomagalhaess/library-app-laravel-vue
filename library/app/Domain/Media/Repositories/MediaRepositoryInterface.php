@@ -27,10 +27,10 @@ interface MediaRepositoryInterface
     public function find(string $type, string $uuid): ?Model;
 
     /**
-     * @param  array<string, mixed>                              $subtypeAttributes  Columns living on the subtype's own table.
+     * @param  array<string, mixed>  $subtypeAttributes  Columns living on the subtype's own table.
      * @param  array{title?:string, publication_year?:int|null, file_path?:string|null}  $mediaAttributes
-     * @param  int[]                                             $authorIds
-     * @param  int[]                                             $classificationIds
+     * @param  int[]  $authorIds
+     * @param  int[]  $classificationIds
      */
     public function create(
         string $type,
@@ -41,10 +41,10 @@ interface MediaRepositoryInterface
     ): Model;
 
     /**
-     * @param  array<string, mixed>                              $subtypeAttributes
+     * @param  array<string, mixed>  $subtypeAttributes
      * @param  array{title?:string, publication_year?:int|null, file_path?:string|null}  $mediaAttributes
-     * @param  int[]|null                                        $authorIds  Pass null to leave authors untouched.
-     * @param  int[]|null                                        $classificationIds  Pass null to leave classifications untouched.
+     * @param  int[]|null  $authorIds  Pass null to leave authors untouched.
+     * @param  int[]|null  $classificationIds  Pass null to leave classifications untouched.
      */
     public function update(
         string $type,

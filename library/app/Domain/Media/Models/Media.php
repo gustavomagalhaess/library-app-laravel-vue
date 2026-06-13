@@ -19,10 +19,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * `mediable_id`) so a single id space is shared across all subtype tables —
  * a book and a movie can never collide because UUIDs are globally unique.
  *
- * @property string      $uuid
- * @property string      $mediable_type
- * @property string      $title
- * @property int|null    $publication_year
+ * @property string $uuid
+ * @property string $mediable_type
+ * @property string $title
+ * @property int|null $publication_year
  * @property string|null $file_path
  */
 class Media extends Model

@@ -96,14 +96,15 @@ make dev
 Useful targets:
 
 ```bash
-make help                          # list all targets
-make artisan c="route:list"        # arbitrary artisan command
-make composer c="require foo/bar"  # arbitrary composer command
-make fresh                         # drop, re-migrate, re-seed
-make horizon                       # tail the queue worker logs
-make horizon-restart               # gracefully restart Horizon workers (picks up code changes)
-make down                          # stop containers (preserves volumes)
-make nuke                          # stop containers + drop all volumes
+make help                         # list all targets
+make artisan c="route:list"       # arbitrary artisan command
+make composer c="require foo/bar" # arbitrary composer command
+make fresh                        # drop, re-migrate, re-seed
+make horizon                      # tail the queue worker logs
+make horizon-restart              # gracefully restart Horizon workers (picks up code changes)
+make down                         # stop containers (preserves volumes)
+make nuke                         # stop containers + drop all volumes
+make pint c="--repair"`           # run code-style auto-fix issues
 ```
 
 ## How the build is layered
@@ -199,6 +200,19 @@ Access is restricted to the `admin` role via the `viewHorizon` / `viewTelescope`
 - Paginated listings (15/page) with `withQueryString()` so search filters survive page navigation.
 - Indexed columns on `media.title`, `media.mediable_type`, and `authors.name`.
 - Author auto-complete uses a dedicated lightweight endpoint (`/authors/search`) with a 250 ms debounce.
+
+## CI
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| **Code Style** (`.github/workflows/code-style.yml`) | Every Pull Request | Runs `./vendor/bin/pint --test` — fails if any file needs reformatting |
+| **Tests** (`.github/workflows/tests.yml`) | Every Pull Request | Runs the full PHPUnit suite (Unit + Feature) against SQLite in-memory |
+
+To fix code style failures locally before pushing:
+
+```bash
+make pint
+```
 
 ## Running tests
 

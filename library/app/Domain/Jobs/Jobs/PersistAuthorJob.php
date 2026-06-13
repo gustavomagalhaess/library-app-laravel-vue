@@ -25,11 +25,12 @@ class PersistAuthorJob implements ShouldQueue
     use TracksProgress;
 
     public int $tries = 3;
+
     public int $timeout = 30;
 
     /**
-     * @param 'create'|'update' $operation
-     * @param int|null          $authorId   PK of the existing author on update; null on create
+     * @param  'create'|'update'  $operation
+     * @param  int|null  $authorId  PK of the existing author on update; null on create
      */
     public function __construct(
         public string $operation,

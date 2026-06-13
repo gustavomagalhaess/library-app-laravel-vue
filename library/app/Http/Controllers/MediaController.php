@@ -233,6 +233,7 @@ class MediaController extends Controller
             return response()->json(['message' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Throwable $e) {
             app('log')->error($e->getMessage(), ['exception' => $e]);
+
             return response()->json(
                 ['message' => MediaMessage::ERROR],
                 Response::HTTP_INTERNAL_SERVER_ERROR,

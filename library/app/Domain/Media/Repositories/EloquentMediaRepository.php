@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Media\Repositories;
 
+use App\Domain\Media\Contracts\MediaSubtype;
 use App\Domain\Media\MediaTypeRegistry;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  *   - The subtype's primary key is `uuid` and matches `media.uuid` 1:1.
  *   - The subtype owns a `media()` morphOne relation to the morph parent.
  *   - The morph parent owns `authors()` (the `media_authors` pivot).
- * These hold for every model implementing {@see \App\Domain\Media\Contracts\MediaSubtype}.
+ * These hold for every model implementing {@see MediaSubtype}.
  */
 final readonly class EloquentMediaRepository implements MediaRepositoryInterface
 {

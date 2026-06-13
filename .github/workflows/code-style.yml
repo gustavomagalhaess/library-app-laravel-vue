@@ -1,0 +1,44 @@
+name: Code Style
+
+on:
+  pull_request:
+    branches: ["**"]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  pint:
+    name: Laravel Pint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Read PHP version
+        id: php-version
+        run: echo "version=$(grep '^PHP_VERSION=' .env.example | cut -d= -f2)" >> $GITHUB_OUTPUT
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ steps.php-version.outputs.version }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: library/vendor
+          key: ${{ runner.os }}-composer-${{ hashFiles('library/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        working-directory: ./library
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+
+      - name: Run Pint
+        working-directory: ./library
+        run: ./vendor/bin/pint --test

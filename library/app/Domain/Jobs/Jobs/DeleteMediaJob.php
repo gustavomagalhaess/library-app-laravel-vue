@@ -22,6 +22,7 @@ class DeleteMediaJob implements ShouldQueue
     use TracksProgress;
 
     public int $tries = 3;
+
     public int $timeout = 60;
 
     public function __construct(

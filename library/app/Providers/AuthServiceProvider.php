@@ -25,10 +25,10 @@ class AuthServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        Gate::define('media.view',     [MediaPolicy::class, 'view']);
-        Gate::define('media.create',   [MediaPolicy::class, 'create']);
-        Gate::define('media.update',   [MediaPolicy::class, 'update']);
-        Gate::define('media.delete',   [MediaPolicy::class, 'delete']);
+        Gate::define('media.view', [MediaPolicy::class, 'view']);
+        Gate::define('media.create', [MediaPolicy::class, 'create']);
+        Gate::define('media.update', [MediaPolicy::class, 'update']);
+        Gate::define('media.delete', [MediaPolicy::class, 'delete']);
         Gate::define('media.download', [MediaPolicy::class, 'download']);
     }
 }

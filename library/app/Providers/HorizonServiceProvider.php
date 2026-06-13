@@ -29,7 +29,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     {
         Gate::define(
             'viewHorizon',
-            fn(User $user) => $user->roles()->where('name', 'admin')->exists()
+            fn (User $user) => $user->roles()->where('name', 'admin')->exists()
         );
     }
 }

@@ -35,9 +35,9 @@ class BookFactory extends Factory
         // `$book->media->authors()` without an extra round-trip.
         return $this->afterCreating(function (Book $book): void {
             $media = $book->media()->create([
-                'title'            => fake()->sentence(rand(2, 5)),
+                'title' => fake()->sentence(rand(2, 5)),
                 'publication_year' => fake()->numberBetween(1900, (int) date('Y')),
-                'file_path'        => 'sample-'.fake()->unique()->slug(2).'.pdf',
+                'file_path' => 'sample-'.fake()->unique()->slug(2).'.pdf',
             ]);
             $book->setRelation('media', $media);
         });

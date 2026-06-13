@@ -25,21 +25,21 @@ class StoreMediaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title'            => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255'],
             'publication_year' => ['required', 'integer', 'between:1000,'.((int) date('Y') + 1)],
-            'file'             => ['required', 'file', 'mimes:pdf', 'max:51200'], // 50 MB
+            'file' => ['required', 'file', 'mimes:pdf', 'max:51200'], // 50 MB
 
             // Existing authors selected from the dropdown.
-            'authors'          => ['array'],
-            'authors.ids'      => ['array'],
-            'authors.ids.*'    => ['integer', 'exists:authors,id'],
+            'authors' => ['array'],
+            'authors.ids' => ['array'],
+            'authors.ids.*' => ['integer', 'exists:authors,id'],
 
             // Newly typed-in authors that should be created on the fly.
-            'authors.new'      => ['array'],
-            'authors.new.*'    => ['string', 'max:255'],
+            'authors.new' => ['array'],
+            'authors.new.*' => ['string', 'max:255'],
 
-            'classifications'       => ['array'],
-            'classifications.ids'   => ['array'],
+            'classifications' => ['array'],
+            'classifications.ids' => ['array'],
             'classifications.ids.*' => ['integer', 'exists:classifications,id'],
         ];
     }

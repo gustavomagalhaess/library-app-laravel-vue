@@ -25,6 +25,7 @@ class DeleteAuthorJob implements ShouldQueue
     use TracksProgress;
 
     public int $tries = 1;
+
     public int $timeout = 30;
 
     public function __construct(

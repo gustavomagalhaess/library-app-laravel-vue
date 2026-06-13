@@ -65,7 +65,7 @@ trait TracksProgress
     public function failed(Throwable $e): void
     {
         $job = TrackedJob::find($this->trackedJobId);
-        if ($job !== null && !$job->isTerminal()) {
+        if ($job !== null && ! $job->isTerminal()) {
             $job->markFailed($this->userFacingMessage($e));
         }
     }
@@ -83,6 +83,7 @@ trait TracksProgress
             return 'The operation failed. Please try again.';
         }
         $firstLine = strtok($message, "\n");
+
         return $firstLine !== false ? $firstLine : $message;
     }
 }

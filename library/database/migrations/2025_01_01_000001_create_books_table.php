@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Schema;
  * The common columns (title, publication_year, file_path) live in `media`,
  * and `books.uuid` matches the corresponding `media.uuid`.
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         Schema::create('books', function (Blueprint $table): void {

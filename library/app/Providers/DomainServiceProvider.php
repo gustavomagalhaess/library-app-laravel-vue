@@ -38,6 +38,7 @@ class DomainServiceProvider extends ServiceProvider
         $this->app->singleton(MediaTypeRegistry::class, function (): MediaTypeRegistry {
             /** @var array<string, class-string> $types */
             $types = config('media.types', []);
+
             return new MediaTypeRegistry($types);
         });
 

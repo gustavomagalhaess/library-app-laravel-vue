@@ -56,6 +56,7 @@ class FortifyServiceProvider extends ServiceProvider
         // Throttle authentication endpoints.
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
+
             return Limit::perMinute(5)->by($throttleKey);
         });
 

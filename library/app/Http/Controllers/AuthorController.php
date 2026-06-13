@@ -58,6 +58,7 @@ class AuthorController extends Controller
         if (mb_strlen($query) < 3) {
             return response()->json(['data' => []]);
         }
+
         return response()->json(['data' => $this->authorService->search($query)]);
     }
 
@@ -122,6 +123,7 @@ class AuthorController extends Controller
     private function validatedSearchTerm(Request $request): ?string
     {
         $term = trim((string) $request->query('q', ''));
+
         return mb_strlen($term) >= 3 ? $term : null;
     }
 }

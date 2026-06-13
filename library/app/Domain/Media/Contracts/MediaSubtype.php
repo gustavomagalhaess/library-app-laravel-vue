@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\Media\Contracts;
 
+use App\Domain\Media\MediaTypeRegistry;
+
 /**
  * Contract that every media subtype model (Book, future Movie, …) implements.
  *
  * The aim is to keep all per-type knowledge inside the subtype's own model
  * class — no parallel "registry" or "config map" to keep in sync. The
- * {@see \App\Domain\Media\MediaTypeRegistry} introspects models through this
+ * {@see MediaTypeRegistry} introspects models through this
  * interface to expose the metadata to the rest of the stack.
  *
  * Adding a new media type therefore boils down to:

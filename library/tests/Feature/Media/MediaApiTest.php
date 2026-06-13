@@ -9,6 +9,7 @@ use App\Domain\Jobs\Models\TrackedJob;
 use App\Domain\Media\MediaTypeRegistry;
 use App\Models\User;
 use Database\Factories\BookFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -41,9 +42,9 @@ class MediaApiTest extends TestCase
     {
         return [
             'book' => [[
-                'type'            => 'book',
-                'factory'         => fn () => BookFactory::new()->create(),
-                'subtype'         => ['pages' => 250],
+                'type' => 'book',
+                'factory' => fn () => BookFactory::new()->create(),
+                'subtype' => ['pages' => 250],
                 'subtype_updated' => ['pages' => 500],
             ]],
         ];
@@ -63,10 +64,10 @@ class MediaApiTest extends TestCase
 
         $author = Author::factory()->create();
         $payload = array_merge([
-            'title'            => 'A Wonderful Story',
+            'title' => 'A Wonderful Story',
             'publication_year' => 2024,
-            'file'             => UploadedFile::fake()->create('book.pdf', 100, 'application/pdf'),
-            'authors'          => ['ids' => [$author->id], 'new' => []],
+            'file' => UploadedFile::fake()->create('book.pdf', 100, 'application/pdf'),
+            'authors' => ['ids' => [$author->id], 'new' => []],
         ], $config['subtype']);
 
         $response = $this->postJson("/api/$type", $payload);
@@ -82,8 +83,8 @@ class MediaApiTest extends TestCase
 
         // Shared `media` row exists with the right morph alias.
         $this->assertDatabaseHas('media', [
-            'mediable_type'    => $type,
-            'title'            => 'A Wonderful Story',
+            'mediable_type' => $type,
+            'title' => 'A Wonderful Story',
             'publication_year' => 2024,
         ]);
 
@@ -121,10 +122,10 @@ class MediaApiTest extends TestCase
         $this->loginAsRole('admin');
 
         $payload = array_merge([
-            'title'            => 'Loner',
+            'title' => 'Loner',
             'publication_year' => 2024,
-            'file'             => UploadedFile::fake()->create('book.pdf', 100, 'application/pdf'),
-            'authors'          => ['ids' => [], 'new' => []],
+            'file' => UploadedFile::fake()->create('book.pdf', 100, 'application/pdf'),
+            'authors' => ['ids' => [], 'new' => []],
         ], $config['subtype']);
 
         $this->postJson("/api/$type", $payload)
@@ -140,10 +141,10 @@ class MediaApiTest extends TestCase
         $this->loginAsRole('reader');
 
         $response = $this->postJson("/api/$type", [
-            'title'            => 'Forbidden',
+            'title' => 'Forbidden',
             'publication_year' => 2024,
-            'file'             => UploadedFile::fake()->create('book.pdf', 100, 'application/pdf'),
-            'authors'          => ['ids' => [], 'new' => ['Anon']],
+            'file' => UploadedFile::fake()->create('book.pdf', 100, 'application/pdf'),
+            'authors' => ['ids' => [], 'new' => ['Anon']],
         ]);
 
         $response->assertForbidden();
@@ -170,14 +171,14 @@ class MediaApiTest extends TestCase
         $this->fakeDisk($type);
         $this->loginAsRole('admin');
 
-        /** @var \Illuminate\Database\Eloquent\Model $record */
+        /** @var Model $record */
         $record = ($config['factory'])();
         $author = Author::factory()->create();
 
         $payload = array_merge([
-            'title'            => 'Renamed Title',
+            'title' => 'Renamed Title',
             'publication_year' => 1999,
-            'authors'          => ['ids' => [$author->id], 'new' => []],
+            'authors' => ['ids' => [$author->id], 'new' => []],
         ], $config['subtype_updated']);
 
         $response = $this->postJson("/api/$type/{$record->getKey()}", $payload);
@@ -189,14 +190,14 @@ class MediaApiTest extends TestCase
         $this->assertSame(TrackedJob::STATUS_COMPLETED, $job->status, $job->message ?? '');
 
         $this->assertDatabaseHas('media', [
-            'uuid'             => $record->getKey(),
-            'title'            => 'Renamed Title',
+            'uuid' => $record->getKey(),
+            'title' => 'Renamed Title',
             'publication_year' => 1999,
         ]);
         foreach ($config['subtype_updated'] as $field => $value) {
             $this->assertDatabaseHas($this->tableFor($type), [
-                'uuid'  => $record->getKey(),
-                $field  => $value,
+                'uuid' => $record->getKey(),
+                $field => $value,
             ]);
         }
     }
@@ -210,9 +211,9 @@ class MediaApiTest extends TestCase
         $response = $this->postJson(
             "/api/{$config['type']}/00000000-0000-0000-0000-000000000000",
             [
-                'title'            => 'Renamed',
+                'title' => 'Renamed',
                 'publication_year' => 2024,
-                'authors'          => ['ids' => [], 'new' => ['Anon']],
+                'authors' => ['ids' => [], 'new' => ['Anon']],
             ],
         );
 
@@ -228,9 +229,9 @@ class MediaApiTest extends TestCase
         $record = ($config['factory'])();
 
         $response = $this->postJson("/api/{$config['type']}/{$record->getKey()}", [
-            'title'            => 'Renamed',
+            'title' => 'Renamed',
             'publication_year' => 2024,
-            'authors'          => ['ids' => [], 'new' => ['Anon']],
+            'authors' => ['ids' => [], 'new' => ['Anon']],
         ]);
 
         $response->assertForbidden();
@@ -258,7 +259,7 @@ class MediaApiTest extends TestCase
         $this->assertSame(TrackedJob::STATUS_COMPLETED, $job->status, $job->message ?? '');
 
         $this->assertDatabaseMissing($this->tableFor($type), ['uuid' => $record->getKey()]);
-        $this->assertDatabaseMissing('media',                ['uuid' => $record->getKey()]);
+        $this->assertDatabaseMissing('media', ['uuid' => $record->getKey()]);
     }
 
     /** @param array<string, mixed> $config */
