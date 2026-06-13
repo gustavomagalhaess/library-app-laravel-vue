@@ -21,6 +21,10 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        // Prevent ViteManifestNotFoundException in HTTP tests that render pages.
+        // Feature tests don't need real JS/CSS assets — only Dusk browser tests do.
+        $this->withoutVite();
+
         if (in_array(RefreshDatabase::class, class_uses_recursive(static::class), true)) {
             $this->seed(RolesAndPermissionsSeeder::class);
         }

@@ -110,6 +110,27 @@ jobs:
         # first volume boot). --force is required to run in non-interactive CI.
         run: docker compose exec -T app php artisan migrate --env=dusk.local --force
 
+      - name: Wait for nginx to be ready
+        # Polls from inside the app container so we verify the same network
+        # path Chrome will use. HTTP status != 000 means nginx is accepting
+        # TCP connections (4xx/5xx are fine — the app may not be fully booted
+        # yet, but connection refused is the failure mode we guard against).
+        run: |
+          for i in $(seq 1 20); do
+            STATUS=$(docker compose exec -T app curl -s -o /dev/null -w "%{http_code}" http://web/ 2>/dev/null || echo "000")
+            if [ "$STATUS" != "000" ]; then
+              echo "nginx ready (HTTP $STATUS)"
+              break
+            fi
+            if [ "$i" = "20" ]; then
+              echo "nginx not ready after 60s — container logs:"
+              docker compose logs web app
+              exit 1
+            fi
+            echo "  attempt $i/20, waiting 3s..."
+            sleep 3
+          done
+
       - name: Run Dusk tests
         # php artisan dusk automatically overlays .env.dusk.local (APP_URL=http://web,
         # QUEUE_CONNECTION=sync, CHROME_BIN, DUSK_DRIVER_URL). Chromium and
