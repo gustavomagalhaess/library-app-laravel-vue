@@ -1,7 +1,3 @@
-.idea/
-.env
-.DS_Store
-node_modules/
 library/vendor/
 library/node_modules/
 library/.env
@@ -13,15 +9,16 @@ library/storage/framework/views/*
 library/storage/logs/*
 library/public/build/
 library/public/hot
-/CLAUDE.md
 
 # Environment & Secrets (AIOX)
+.env
 .env.local
 .env.*.local
 *.key
 *.pem
 
 # Dependencies (AIOX)
+node_modules/
 node_modules
 
 # Build & Logs (AIOX)
@@ -33,6 +30,22 @@ logs/
 # IDE & OS (AIOX)
 Thumbs.db
 *.swp
+.idea/
+.DS_Store
+
+# AI / AIOX / Claude tooling (never commit to repo)
+.aiox-core/
+.aiox/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.kimi/
+.antigravity/
+.github/agents/
+AGENTS.md
+CLAUDE.md
+docs/
 
 # AIOX Local (AIOX)
 .aiox-core/local/
